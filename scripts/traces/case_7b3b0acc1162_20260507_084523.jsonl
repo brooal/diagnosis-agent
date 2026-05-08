@@ -1,0 +1,1 @@
+{"time": "2026-05-07T08:45:23", "case_id": "case_7b3b0acc1162", "event_type": "candidate_causes_updated", "payload": {"candidate_causes": [{"cause_type": "beam_trip", "description": "束流流强在诊断窗口内快速跌落，如何掉束特征", "confidence": 0.8, "evidence_index": [0]}]}}
