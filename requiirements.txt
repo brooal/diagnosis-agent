@@ -1,0 +1,7 @@
+langgraph
+sqlalchemy>=2.0
+psycopg2-binary
+python-dotenv
+pydantic
+openai
+pyyaml

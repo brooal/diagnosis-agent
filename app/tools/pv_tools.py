@@ -1,75 +1,128 @@
+# app/tools/pv_tools.py
 
+from __future__ import annotations
+
+from app.data_sources.pv_repository import PVRepository
+from app.data_sources.time_utils import parse_time_arg
 from app.tools.base import ToolResult, ToolSpec
 
-def query_pv_at_time(pv_name : str, timestamp : str) -> ToolResult:
-    value = 120.5
 
-    return ToolResult(
-        ok=True,
-        output={
-            "pv_name" : pv_name,
-            "timestamp" : timestamp,
-            "value" : value,
-        },
-        summary= f"{pv_name} 在 {timestamp} 的值为 {value}",
+class PVTools:
+    def __init__(self, repo: PVRepository) -> None:
+        self.repo = repo
 
-    )
+    def fetch_beam_samples(
+        self,
+        beam_channel: str,
+        start: str,
+        end: str,
+        limit: int | None = None,
+    ) -> ToolResult:
+        try:
+            start_time = parse_time_arg(start)
+            end_time = parse_time_arg(end)
 
-query_pv_at_time_spec = ToolSpec(
-    name="query_pv_at_time",
-    description = "查询某个PV在指定时刻附近的值",
-    parameters={
-        "type" : "object",
-        "properties" : {
-            "pv_name" : {
-                "type" : "string",
-                "descriptions" : "PV名称",
-            },
-            "timestamp" : {
-                "type" : "string",
-                "description" : "ISO8601 时间字符串",
-            }
-        },
-        "required" : ["pv_name" ,"timestamp"],
-    },
-    handler=query_pv_at_time,
-)
+            samples = self.repo.fetch_channel_samples(
+                channel_name=beam_channel,
+                start_time=start_time,
+                end_time=end_time,
+                limit=limit,
+            )
 
-#一段时间范围内的故障诊断
-def query_pv_range(pv_name: str, start: str, end: str) -> ToolResult:
-    # mock：真实场景中这里查询时序数据库
-    result = {
-        "pv_name": pv_name,
-        "start": start,
-        "end": end,
-        "min": 0.1,
-        "max": 120.5,
-        "avg": 80.3,
-        "drop_detected": True,
-        "drop_time": "2026-05-06T10:02:31+09:00",
-    }
+            output = [
+                {
+                    "channel_name": item.channel_name,
+                    "smpl_time": item.smpl_time,
+                    "nanosecs": item.nanosecs,
+                    "float_val": item.float_val,
+                }
+                for item in samples
+            ]
 
-    return ToolResult(
-        ok=True,
-        output=result,
-        summary=(
-            f"{pv_name} 在 {start} 到 {end} 范围内出现跌落，"
-            f"跌落时间约为 {result['drop_time']}"
-        ),
-    )
+            return ToolResult(
+                ok=True,
+                output=output,
+                summary=f"查询到 {len(samples)} 条束流通道样本。",
+            )
+        except Exception as exc:
+            return ToolResult(
+                ok=False,
+                output=[],
+                summary="查询束流样本失败。",
+                error=f"{type(exc).__name__}: {exc}",
+            )
 
+    def fetch_power_samples(
+        self,
+        power_pattern: str,
+        start: str,
+        end: str,
+        limit: int | None = None,
+    ) -> ToolResult:
+        try:
+            start_time = parse_time_arg(start)
+            end_time = parse_time_arg(end)
 
-query_pv_range_spec = ToolSpec(
-    name="query_pv_range",
-    description="查询某个 PV 在时间范围内的统计信息和简单异常特征。",
-    parameters={
-        "type": "object",
-        "properties": {
-            "pv_name": {"type": "string"},
-            "start": {"type": "string"},
-            "end": {"type": "string"},
-        },
-        "required": ["pv_name", "start", "end"],
-    },
-    handler=query_pv_range,
-)
+            samples = self.repo.fetch_pattern_samples(
+                pattern=power_pattern,
+                start_time=start_time,
+                end_time=end_time,
+                limit=limit,
+            )
+
+            output = [
+                {
+                    "channel_name": item.channel_name,
+                    "smpl_time": item.smpl_time,
+                    "nanosecs": item.nanosecs,
+                    "float_val": item.float_val,
+                }
+                for item in samples
+            ]
+
+            return ToolResult(
+                ok=True,
+                output=output,
+                summary=f"查询到 {len(samples)} 条电源通道样本。",
+            )
+        except Exception as exc:
+            return ToolResult(
+                ok=False,
+                output=[],
+                summary="查询电源样本失败。",
+                error=f"{type(exc).__name__}: {exc}",
+            )
+
+    def specs(self) -> list[ToolSpec]:
+        return [
+            ToolSpec(
+                name="fetch_beam_samples",
+                description="查询指定束流通道在时间范围内的原始样本。",
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "beam_channel": {"type": "string"},
+                        "start": {"type": "string"},
+                        "end": {"type": "string"},
+                        "limit": {"type": "integer"},
+                    },
+                    "required": ["beam_channel", "start", "end"],
+                },
+                handler=self.fetch_beam_samples,
+            ),
+            ToolSpec(
+                name="fetch_power_samples",
+                description="按照 ILIKE 模式查询电源通道在时间范围内的原始样本。",
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "power_pattern": {"type": "string"},
+                        "start": {"type": "string"},
+                        "end": {"type": "string"},
+                        "limit": {"type": "integer"},
+                    },
+                    "required": ["power_pattern", "start", "end"],
+                },
+                handler=self.fetch_power_samples,
+            ),
+        ]
