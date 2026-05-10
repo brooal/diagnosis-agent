@@ -1,67 +1,46 @@
+# app/agent/state.py
+
 from __future__ import annotations
 
-from multiprocessing.connection import Listener
 from typing import Any, Literal, TypedDict
 
-class DiagnosisState(TypedDict, total= False):
-    #一次诊断的id,harness IDS
-    thread_uid : str
-    turn_uid : str
-    run_uid : str
-    case_uid : str
 
-    #诊断来源
-    trigger_source : Literal["chat","auto"]
+class DiagnosisState(TypedDict, total=False):
+    # Harness IDs
+    thread_uid: str
+    turn_uid: str
+    run_uid: str
+    case_uid: str
 
-    #用户原始问题
-    user_query : str | None
-
-    #诊断目标
+    # 输入
+    trigger_source: Literal["chat", "auto"]
+    user_query: str | None
     intent: str | None
-
-    #时间窗口
     time_window: dict[str, str] | None
-    # 示例：
-    # {
-    #   "start": "2026-05-06T10:00:00+09:00",
-    #   "end": "2026-05-06T10:05:00+09:00"
-    # }
+    scope: dict[str, Any]
 
-    #设备范围
-    scope : dict[str, Any]
-    # 示例：
-    # {
-    #   "lab": "lab1",
-    #   "beamline": "BL01",
-    #   "device_group": "quadrupole"
-    # }
+    # ReAct 执行控制
+    step: int
+    max_steps: int
+    done: bool
+    status: Literal["running", "completed", "failed"]
 
-    #Agent计划
-    plan : list[dict[str, Any]]
+    # ReAct 当前动作
+    current_thought: str | None
+    current_action: dict[str, Any] | None
 
-    #当前执行步骤
-    step : int
-    max_steps : int
+    # ReAct 历史
+    react_history: list[dict[str, Any]]
+    tool_history: list[dict[str, Any]]
+    skill_history: list[dict[str, Any]]
+    observations: list[dict[str, Any]]
 
-    #最近工具/Skill调用记录
-    tool_history : list[dict[str, Any]]
-    skill_history : list[dict[str, Any]]
+    # 证据和候选原因
+    evidence: list[dict[str, Any]]
+    candidate_causes: list[dict[str, Any]]
 
-    #诊断过程中提取中的数据
-    evidence: list[dict[str,Any]]
+    # 输出
+    final_answer: str | None
 
-    #候选根因
-    candidate_causes : list[dict[str, Any]]
-
-    #最终输出
-    final_answer : str | None
-
-    #状态控制
-    done : bool
-    status : Literal["running", "completed", "failed"]
-
-    #trace文件或者trace_id
-    # trace_id : str
-
-
-
+    # 错误
+    error: str | None

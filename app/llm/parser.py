@@ -21,6 +21,6 @@ def extract_json_object(text: str) -> dict[str, Any]:
 
     match = re.search(r"\{.*\}", text, flags=re.S)
     if not match:
-        raise ValueError(f"No JSON object found in LLM output: {text}")
+        raise ValueError(f"LLM输出中没有JSON对象: {text}")
 
     return json.loads(match.group(0))

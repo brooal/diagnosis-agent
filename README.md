@@ -108,3 +108,19 @@ diagnosis-agent/
 ├── requirements.txt
 ├── pyproject.toml
 └── README.md
+
+## 数据分析逻辑分离
+| 逻辑类型               | 放哪里              | 原因                       |
+| ------------------ | ---------------- | ------------------------ |
+| 时间范围过滤             | SQL              | 数据库最擅长                   |
+| PV 名称匹配            | SQL              | `=` / `ILIKE` / index    |
+| 最大值、最小值、平均值        | SQL              | 聚合能力强                    |
+| 第一次异常时间            | SQL              | `ORDER BY LIMIT 1` 或窗口函数 |
+| 前后点变化率             | SQL              | `LAG()` 窗口函数适合           |
+| 多设备批量异常筛选          | SQL              | 减少返回数据量                  |
+| 简单阈值判断             | SQL              | 避免拉全量数据                  |
+| 多类数据关联诊断           | Analysis / Skill | 业务逻辑复杂                   |
+| 跨 PV、报警、PLC、设备拓扑关联 | Analysis / Skill | 需要组合判断                   |
+| 根因排序               | Analysis / Skill | 规则更复杂                    |
+| 生成诊断报告             | LLM Summarizer   | 自然语言表达                   |
+| 决定先查哪个 skill       | LLM Planner      | 任务规划                     |
