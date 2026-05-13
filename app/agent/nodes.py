@@ -82,7 +82,7 @@ def plan_node(
             user_query=state.get("user_query"),
             time_window=state.get("time_window"),
             scope=state.get("scope"),
-            tool_specs=tools.list_spec(),
+            tool_specs=tools.list_spec(expose_to_agent_only=True),
             skill_specs=skills.list_spec(),
             react_history=state.get("react_history", []),
             observations=state.get("observations", []),

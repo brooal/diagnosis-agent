@@ -56,6 +56,9 @@ def _readonly_query_with(
     name="test_db_connection",
     description="测试远程 PostgreSQL 诊断数据库是否可以连接，并检查时区配置。",
     parameters={"type": "object", "properties": {}, "required": []},
+    category="db",
+    read_only=True,
+    expose_to_agent=True,
 )
 def test_db_connection() -> ToolResult:
     runtime = get_tool_runtime()
@@ -80,6 +83,9 @@ def test_db_connection() -> ToolResult:
         },
         "required": ["sql"],
     },
+    category="db",
+    read_only=True,
+    expose_to_agent=True,
 )
 def readonly_query(sql: str, max_rows: int | None = None) -> ToolResult:
     runtime = get_tool_runtime()

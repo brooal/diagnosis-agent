@@ -25,14 +25,6 @@ class DBTraceRecorder:
     ) -> None:
         seq = self.next_seq(run_uid)
 
-        self.harness.add_trace_event(
-            run_uid=run_uid,
-            case_uid=case_uid,
-            seq=seq,
-            event_type=event_type,
-            payload=payload,
-        )
-
         self.harness.add_item(
             run_uid=run_uid,
             case_uid=case_uid,

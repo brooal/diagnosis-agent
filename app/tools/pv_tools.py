@@ -95,6 +95,9 @@ def _fetch_power_samples_with(
         },
         "required": ["beam_channel", "start", "end"],
     },
+    category="pv",
+    read_only=True,
+    expose_to_agent=True,
 )
 def fetch_beam_samples(
     beam_channel: str,
@@ -132,6 +135,9 @@ def fetch_beam_samples(
         },
         "required": ["power_pattern", "start", "end"],
     },
+    category="pv",
+    read_only=True,
+    expose_to_agent=True,
 )
 def fetch_power_samples(
     power_pattern: str,

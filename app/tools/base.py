@@ -17,6 +17,9 @@ class ToolSpec:
     name: str
     description: str
     parameters: dict[str, Any]
+    category: str
+    read_only: bool
+    expose_to_agent: bool
     func: Callable[..., ToolResult]
 
 
@@ -36,6 +39,9 @@ class ToolRegistry:
         name: str,
         description: str,
         parameters: dict[str, Any],
+        category: str,
+        read_only: bool,
+        expose_to_agent: bool,
         func: Callable[..., ToolResult],
     ) -> None:
         if name in self._tools:
@@ -44,6 +50,9 @@ class ToolRegistry:
             name=name,
             description=description,
             parameters=parameters,
+            category=category,
+            read_only=read_only,
+            expose_to_agent=expose_to_agent,
             func=func,
         )
 
@@ -61,6 +70,15 @@ class ToolRegistry:
             )
 
         spec = self._tools[name]
+        missing_required = _missing_required_arguments(spec.parameters, arguments)
+        if missing_required:
+            names = ", ".join(missing_required)
+            return ToolResult(
+                ok=False,
+                summary=f"工具 {name} 缺少必填参数: {names}",
+                error="missing_required_arguments",
+                output={"missing_required": missing_required},
+            )
         try:
             return spec.func(**arguments)
         except Exception as exc:
@@ -70,14 +88,20 @@ class ToolRegistry:
                 error=type(exc).__name__,
             )
 
-    def list_spec(self) -> list[dict[str, Any]]:
+    def list_spec(self, expose_to_agent_only: bool = True) -> list[dict[str, Any]]:
+        specs = self._tools.values()
+        if expose_to_agent_only:
+            specs = [spec for spec in specs if spec.expose_to_agent]
         return [
             {
                 "name": spec.name,
                 "description": spec.description,
                 "parameters": spec.parameters,
+                "category": spec.category,
+                "read_only": spec.read_only,
+                "expose_to_agent": spec.expose_to_agent,
             }
-            for spec in self._tools.values()
+            for spec in specs
         ]
 
     def clear(self) -> None:
@@ -88,12 +112,23 @@ _global_tool_registry = ToolRegistry()
 _tool_runtime = ToolRuntime()
 
 
-def tool(name: str, description: str, parameters: dict[str, Any]) -> Callable[..., Any]:
+def tool(
+    *,
+    name: str,
+    description: str,
+    parameters: dict[str, Any],
+    category: str,
+    read_only: bool,
+    expose_to_agent: bool,
+) -> Callable[..., Any]:
     def decorator(func: Callable[..., ToolResult]) -> Callable[..., ToolResult]:
         _global_tool_registry.register(
             name=name,
             description=description,
             parameters=parameters,
+            category=category,
+            read_only=read_only,
+            expose_to_agent=expose_to_agent,
             func=func,
         )
         return func
@@ -126,3 +161,19 @@ def reset_tool_registry() -> None:
 
 def reset_tool_runtime() -> None:
     set_tool_runtime()
+
+
+def _missing_required_arguments(
+    parameters: dict[str, Any],
+    arguments: dict[str, Any],
+) -> list[str]:
+    required = parameters.get("required", [])
+    if not isinstance(required, list):
+        return []
+    missing: list[str] = []
+    for key in required:
+        if not isinstance(key, str):
+            continue
+        if key not in arguments or arguments[key] is None:
+            missing.append(key)
+    return missing

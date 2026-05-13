@@ -152,6 +152,9 @@ def _runtime_repo_and_settings() -> tuple[object | None, object]:
         },
         "required": ["start", "end"],
     },
+    category="diagnosis",
+    read_only=True,
+    expose_to_agent=False,
 )
 def diagnose_beam_fault(
     start: str,
@@ -196,6 +199,9 @@ def diagnose_beam_fault(
         },
         "required": ["fault_time"],
     },
+    category="diagnosis",
+    read_only=True,
+    expose_to_agent=False,
 )
 def diagnose_power_faults(
     fault_time: str,
@@ -240,6 +246,9 @@ def diagnose_power_faults(
         },
         "required": ["start", "end"],
     },
+    category="diagnosis",
+    read_only=True,
+    expose_to_agent=False,
 )
 def diagnose_incident(
     start: str,
