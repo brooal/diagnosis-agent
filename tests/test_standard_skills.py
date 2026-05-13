@@ -49,11 +49,15 @@ class FakeTools:
 
 
 def test_metadata_parser_reads_skill_md() -> None:
-    descriptor = load_skill_descriptor(Path("app/skills/data/beam_state_diagnosis/SKILL.md"))
+    descriptor = load_skill_descriptor(Path("app/skills/diagnosis/beam/state/SKILL.md"))
 
     assert descriptor.name == "beam_state_diagnosis"
     assert descriptor.version == "1.0.0"
-    assert descriptor.category == "data"
+    assert descriptor.category == "diagnosis"
+    assert descriptor.domain == "beam"
+    assert descriptor.stage == "phenomenon_detection"
+    assert "beam_trip" in descriptor.symptoms
+    assert "phenomena" in descriptor.produces
     assert descriptor.parameters["type"] == "object"
     assert "Beam State Diagnosis" in descriptor.docs
 
@@ -64,10 +68,14 @@ def test_registry_versions_category_and_search() -> None:
         SkillDescriptor(
             name="sample",
             version="1.0.0",
-            category="data",
+            category="diagnosis",
+            domain="beam",
+            stage="phenomenon_detection",
             description="old beam sample",
             entrypoint="tests.fake:Skill",
             parameters={"type": "object"},
+            symptoms=["beam_trip"],
+            produces=["phenomena"],
             tags=["beam"],
         )
     )
@@ -75,17 +83,24 @@ def test_registry_versions_category_and_search() -> None:
         SkillDescriptor(
             name="sample",
             version="1.2.0",
-            category="data",
+            category="diagnosis",
+            domain="beam",
+            stage="phenomenon_detection",
             description="new beam sample",
             entrypoint="tests.fake:Skill",
             parameters={"type": "object"},
+            symptoms=["beam_decay"],
+            produces=["phenomena"],
             tags=["beam"],
         )
     )
 
     assert registry.get_descriptor("sample").version == "1.2.0"
-    assert registry.list_spec(category="data", include_versions=True)[0]["version"] == "1.2.0"
-    assert registry.search("beam")[0]["name"] == "sample"
+    spec = registry.list_spec(category="diagnosis", include_versions=True)[0]
+    assert spec["version"] == "1.2.0"
+    assert spec["domain"] == "beam"
+    assert spec["stage"] == "phenomenon_detection"
+    assert registry.search("beam_decay")[0]["name"] == "sample"
 
 
 def test_plugin_discovery_is_lazy(tmp_path: Path) -> None:
@@ -135,6 +150,10 @@ def test_standard_skill_registry_discovers_builtin_skills() -> None:
 
     names = {spec["name"] for spec in specs}
     assert {"beam_state_diagnosis", "quadrupole_power_diagnosis"} <= names
+    beam_spec = next(spec for spec in specs if spec["name"] == "beam_state_diagnosis")
+    assert beam_spec["category"] == "diagnosis"
+    assert beam_spec["domain"] == "beam"
+    assert beam_spec["stage"] == "phenomenon_detection"
 
 
 def test_beam_skill_calls_real_diagnosis_tool() -> None:
@@ -153,6 +172,8 @@ def test_beam_skill_calls_real_diagnosis_tool() -> None:
     )
 
     assert result.ok
+    assert result.output["phenomena"][0]["type"] == "beam_trip"
+    assert result.output["recommended_next_skills"][0]["name"] == "beam_trip_cause_analysis"
     assert result.candidate_causes[0]["drop_time"] == "2026-05-06T10:02:31+09:00"
     assert tools.calls[0] == (
         "diagnose_beam_fault",
