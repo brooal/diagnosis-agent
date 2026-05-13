@@ -14,7 +14,7 @@ from app.agent.nodes import (
 )
 from app.llm.client import LLMClient
 from app.harness.service import HarnessService
-from app.skills.registry import SkillRegistry
+from app.skills.common import SkillRegistry
 from app.tools.registry import ToolRegistry
 from app.tracing.db_recorder import DBTraceRecorder
 

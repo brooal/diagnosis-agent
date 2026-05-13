@@ -7,7 +7,7 @@ from app.agent.state import DiagnosisState
 from app.llm.client import LLMClient
 from app.llm.parser import extract_json_object
 from app.llm.prompts import build_final_messages, build_react_messages
-from app.skills.registry import SkillRegistry
+from app.skills.common import SkillRegistry
 from app.tools.registry import ToolRegistry
 from app.tracing.db_recorder import DBTraceRecorder
 

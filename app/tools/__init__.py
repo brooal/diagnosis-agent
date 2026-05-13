@@ -1,24 +1,41 @@
 from __future__ import annotations
 
-from app.data_sources.remote_db import RemoteDB
+import importlib
+
+from app.config import get_settings
 from app.data_sources.pv_repository import PVRepository
-from app.tools.db_tools import DBTools
-from app.tools.diagnosis_tools import DiagnosisTools
-from app.tools.pv_tools import PVTools
-from app.tools.registry import ToolRegistry
+from app.data_sources.remote_db import RemoteDB
+from app.tools.base import ToolRegistry, get_tool_registry, set_tool_runtime
 
-#注册目前所有的工具，并返回注册表供agent使用
+_BUILTIN_TOOL_MODULES = (
+    "app.tools.db_tools",
+    "app.tools.pv_tools",
+    "app.tools.diagnosis_tools",
+)
+_builtin_tools_loaded = False
+
+
+def _load_builtin_tool_modules() -> None:
+    global _builtin_tools_loaded
+    if _builtin_tools_loaded:
+        return
+
+    for module_name in _BUILTIN_TOOL_MODULES:
+        importlib.import_module(module_name)
+
+    _builtin_tools_loaded = True
+
+
 def build_tool_registry() -> ToolRegistry:
-    registry = ToolRegistry()
-
     remote_db = RemoteDB()
     pv_repo = PVRepository(remote_db)
-    db_tools = DBTools(remote_db)
-    pv_tools = PVTools(pv_repo)
-    diag_tools = DiagnosisTools(pv_repo)
+    set_tool_runtime(
+        remote_db=remote_db,
+        pv_repo=pv_repo,
+        settings=get_settings(),
+    )
+    _load_builtin_tool_modules()
+    return get_tool_registry()
 
-    for group in [db_tools , pv_tools, diag_tools]:
-        for spec in group.specs():
-            registry.register(spec)
 
-    return registry
+__all__ = ["ToolRegistry", "build_tool_registry"]

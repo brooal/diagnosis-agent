@@ -15,6 +15,11 @@ class SkillDescriptor:
     description: str
     entrypoint: str
     parameters: dict[str, Any]
+    domain: str | None = None
+    stage: str | None = None
+    symptoms: list[str] = field(default_factory=list)
+    requires: dict[str, Any] = field(default_factory=dict)
+    produces: list[str] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
     metadata_path: Path | None = None
     base_dir: Path | None = None
@@ -31,6 +36,11 @@ class SkillDescriptor:
             "description": self.description,
             "parameters": self.parameters,
             "category": self.category,
+            "domain": self.domain,
+            "stage": self.stage,
+            "symptoms": self.symptoms,
+            "requires": self.requires,
+            "produces": self.produces,
             "tags": self.tags,
         }
         if include_version:
@@ -59,13 +69,34 @@ def load_skill_descriptor(path: str | Path) -> SkillDescriptor:
     if not isinstance(tags, list):
         raise ValueError(f"{metadata_path} metadata field 'tags' must be a list.")
 
+    symptoms = data.get("symptoms", [])
+    if isinstance(symptoms, str):
+        symptoms = [symptoms]
+    if not isinstance(symptoms, list):
+        raise ValueError(f"{metadata_path} metadata field 'symptoms' must be a list.")
+
+    requires = data.get("requires", {})
+    if not isinstance(requires, dict):
+        raise ValueError(f"{metadata_path} metadata field 'requires' must be an object.")
+
+    produces = data.get("produces", [])
+    if isinstance(produces, str):
+        produces = [produces]
+    if not isinstance(produces, list):
+        raise ValueError(f"{metadata_path} metadata field 'produces' must be a list.")
+
     return SkillDescriptor(
         name=str(data["name"]),
         version=str(data["version"]),
         category=str(data["category"]),
+        domain=str(data["domain"]) if data.get("domain") is not None else None,
+        stage=str(data["stage"]) if data.get("stage") is not None else None,
         description=str(data["description"]),
         entrypoint=str(data["entrypoint"]),
         parameters=parameters,
+        symptoms=[str(item) for item in symptoms],
+        requires=requires,
+        produces=[str(item) for item in produces],
         tags=[str(item) for item in tags],
         metadata_path=metadata_path,
         base_dir=metadata_path.parent,

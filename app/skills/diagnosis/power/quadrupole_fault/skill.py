@@ -5,19 +5,7 @@ from typing import Any
 from app.skills.common import SkillContext, SkillResult
 
 
-class QuadrupolePowerSkill:
-    """Find quadrupole power candidates around a beam fault time.
-
-    Parameters:
-        fault_time: Center time for power fault search. Can be inferred from state.
-        power_pattern: Power PV pattern.
-        pv_pattern: Backward-compatible alias for power_pattern.
-        window_seconds: Search window in seconds.
-
-    Returns:
-        SkillResult with power fault evidence and candidate causes from the tool.
-    """
-
+class QuadrupolePowerDiagnosisSkill:
     def run(self, context: SkillContext, arguments: dict[str, Any]) -> SkillResult:
         fault_time = arguments.get("fault_time") or _infer_fault_time(context.state)
         if not fault_time:
@@ -27,9 +15,7 @@ class QuadrupolePowerSkill:
                 evidence=[],
                 candidate_causes=[],
                 output={
-                    "required_next_step": (
-                        "先调用 beam_state_diagnosis 或 diagnose_beam_fault 获取故障时间。"
-                    )
+                    "required_next_step": "先调用 beam_state_diagnosis 或 diagnose_beam_fault 获取故障时间。"
                 },
                 error="missing_fault_time",
             )
@@ -64,7 +50,6 @@ class QuadrupolePowerSkill:
                 "features": output,
             }
         ]
-
         candidate_causes = _extract_candidate_causes(output)
         return SkillResult(
             ok=True,

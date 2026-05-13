@@ -3,7 +3,6 @@ from __future__ import annotations
 import difflib
 import importlib
 import importlib.util
-import inspect
 import sys
 from pathlib import Path
 from typing import Any
@@ -18,16 +17,11 @@ class SkillRegistry:
     def __init__(self) -> None:
         self._skills: dict[tuple[str, str], SkillDescriptor] = {}
 
-    def register(self, descriptor: SkillDescriptor | Any) -> None:
-        if isinstance(descriptor, SkillDescriptor):
-            skill_descriptor = descriptor
-        else:
-            skill_descriptor = self._descriptor_from_legacy_skill(descriptor)
-
-        if skill_descriptor.key in self._skills:
-            name, version = skill_descriptor.key
+    def register(self, descriptor: SkillDescriptor) -> None:
+        if descriptor.key in self._skills:
+            name, version = descriptor.key
             raise ValueError(f"Skill already registered: {name}@{version}")
-        self._skills[skill_descriptor.key] = skill_descriptor
+        self._skills[descriptor.key] = descriptor
 
     def discover(self, path: str | Path) -> None:
         root = Path(path)
@@ -88,6 +82,10 @@ class SkillRegistry:
                     descriptor.name,
                     descriptor.description,
                     descriptor.category,
+                    descriptor.domain or "",
+                    descriptor.stage or "",
+                    " ".join(descriptor.symptoms),
+                    " ".join(descriptor.produces),
                     " ".join(descriptor.tags),
                 ]
             ).lower()
@@ -113,11 +111,7 @@ class SkillRegistry:
     ) -> SkillResult:
         skill = self.get(name, version)
         context = SkillContext(state=state, tools=tools, registry=self)
-
-        parameter_names = list(inspect.signature(skill.run).parameters)
-        if "context" in parameter_names:
-            return skill.run(context=context, arguments=arguments)
-        return skill.run(state=state, arguments=arguments, tools=tools)
+        return skill.run(context=context, arguments=arguments)
 
     def _latest_descriptors(self) -> list[SkillDescriptor]:
         latest_by_name: dict[str, SkillDescriptor] = {}
@@ -158,21 +152,6 @@ class SkillRegistry:
                 return module
 
         return importlib.import_module(module_name)
-
-    def _descriptor_from_legacy_skill(self, skill: Any) -> SkillDescriptor:
-        descriptor = SkillDescriptor(
-            name=skill.name,
-            version=getattr(skill, "version", "0.0.0"),
-            category=getattr(skill, "category", "legacy"),
-            description=skill.description,
-            entrypoint=f"{skill.__class__.__module__}:{skill.__class__.__name__}",
-            parameters=skill.parameters,
-            tags=getattr(skill, "tags", []),
-            docs=(skill.__doc__ or "").strip(),
-        )
-        descriptor._instance = skill
-        return descriptor
-
 
 def _version_key(version: str) -> tuple[int, ...]:
     parts: list[int] = []

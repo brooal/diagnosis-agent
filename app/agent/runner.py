@@ -11,7 +11,6 @@ from app.llm.client import LLMClient
 from app.skills import build_skill_registry
 from app.tools import build_tool_registry
 from sqlalchemy.orm import Session
-from app.tracing.recorder import TraceRecorder
 from app.tracing.db_recorder import DBTraceRecorder
 
 class DiagnosisAgentRunner:
