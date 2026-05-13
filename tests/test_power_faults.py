@@ -2,15 +2,16 @@
 
 from app.data_sources.remote_db import RemoteDB
 from app.data_sources.pv_repository import PVRepository
-from app.tools.diagnosis_tools import DiagnosisTools
+from app.tools.base import set_tool_runtime
+from app.tools.diagnosis_tools import diagnose_power_faults
 
 
 def main():
     db = RemoteDB()
     repo = PVRepository(db)
-    tools = DiagnosisTools(repo)
+    set_tool_runtime(remote_db=db, pv_repo=repo)
 
-    result = tools.diagnose_power_faults(
+    result = diagnose_power_faults(
         fault_time="2026-05-06 10:02:31",
         window_seconds=10,
     )
