@@ -18,6 +18,7 @@ class DiagnosisState(TypedDict, total=False):
     intent: str | None
     time_window: dict[str, str] | None
     scope: dict[str, Any]
+    conversation_context: dict[str, Any]
 
     # ReAct 执行控制
     step: int

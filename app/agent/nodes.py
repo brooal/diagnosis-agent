@@ -82,6 +82,7 @@ def plan_node(
             user_query=state.get("user_query"),
             time_window=state.get("time_window"),
             scope=state.get("scope"),
+            conversation_context=state.get("conversation_context"),
             tool_specs=tools.list_spec(expose_to_agent_only=True),
             skill_specs=skills.list_spec(),
             react_history=state.get("react_history", []),
@@ -412,6 +413,7 @@ def summarize_node(
     if not final_answer:
         messages = build_final_messages(
             user_query=state.get("user_query"),
+            conversation_context=state.get("conversation_context"),
             observations=state.get("observations", []),
             evidence=evidence,
             candidate_causes=candidate_causes,

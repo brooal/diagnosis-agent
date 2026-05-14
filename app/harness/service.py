@@ -55,6 +55,25 @@ class HarnessService:
         self.db.commit()
         return turn_uid
 
+    def get_recent_turns(
+        self,
+        *,
+        thread_uid: str,
+        limit: int = 10,
+        exclude_turn_uid: str | None = None,
+    ) -> list[HarnessTurn]:
+        query = self.db.query(HarnessTurn).filter(HarnessTurn.thread_uid == thread_uid)
+        if exclude_turn_uid:
+            query = query.filter(HarnessTurn.turn_uid != exclude_turn_uid)
+
+        rows = (
+            query.order_by(HarnessTurn.id.desc())
+            .limit(limit)
+            .all()
+        )
+        rows.reverse()
+        return rows
+
     def create_case(
         self,
         *,

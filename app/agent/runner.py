@@ -1,10 +1,7 @@
 from  __future__ import annotations
 
-from uuid import uuid4
-
-from sqlalchemy import false
-
 from app.agent.graph import build_diagnosis_graph
+from app.agent.context_builder import build_runtime_context
 from app.agent.state import DiagnosisState
 from app.harness.service import HarnessService
 from app.llm.client import LLMClient
@@ -71,10 +68,23 @@ class DiagnosisAgentRunner:
             "time_window": time_window,
             "user_query": user_query,
             "scope": scope or {},
+            "conversation_context": build_runtime_context(
+                self.harness,
+                thread_uid=thread_uid,
+                current_turn_uid=turn_uid,
+                max_turns=10,
+            ),
             "max_steps" : 8
         }
 
         final_state = self.graph.invoke(initial_state)
+        final_answer = final_state.get("final_answer")
+        if final_answer:
+            self.harness.create_turn(
+                thread_uid=thread_uid,
+                role="assistant",
+                content=final_answer,
+            )
         return final_state
 
     def run_auto(
@@ -114,6 +124,12 @@ class DiagnosisAgentRunner:
             "time_window": time_window,
             "user_query": f"自动触发故障诊断 ：{fault_type}",
             "scope": scope or {},
+            "conversation_context": build_runtime_context(
+                self.harness,
+                thread_uid=thread_uid,
+                current_turn_uid=turn_uid,
+                max_turns=10,
+            ),
             "max_steps" : 8
         }
         final_state = self.graph.invoke(initial_state)

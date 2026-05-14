@@ -82,6 +82,7 @@ def build_react_messages(
     user_query: str | None,
     time_window: dict | None,
     scope: dict | None,
+    conversation_context: dict | None,
     tool_specs: list[dict],
     skill_specs: list[dict],
     react_history: list[dict],
@@ -111,6 +112,7 @@ def build_react_messages(
 """
 
     payload = {
+        "conversation_context": conversation_context or {"recent_turns": []},
         "user_query": user_query,
         "time_window": time_window,
         "scope": scope,
@@ -165,6 +167,7 @@ def build_react_messages(
 def build_final_messages(
     *,
     user_query: str | None,
+    conversation_context: dict | None,
     observations: list[dict],
     evidence: list[dict],
     candidate_causes: list[dict],
@@ -183,6 +186,7 @@ def build_final_messages(
 """
 
     payload = {
+        "conversation_context": conversation_context or {"recent_turns": []},
         "user_query": user_query,
         "react_history": react_history,
         "observations": observations,
