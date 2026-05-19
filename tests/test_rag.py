@@ -171,9 +171,9 @@ def test_rag_search_uses_doc_type_allocation_with_system_design() -> None:
     doc_types = [result.metadata["doc_type"] for result in results]
 
     assert len(results) == 10
-    assert doc_types.count("human_diagnosis_case") == 1
-    assert doc_types.count("system_design_document") == 8
-    assert doc_types.count("agent_case_summary") == 1
+    assert doc_types.count("human_diagnosis_case") == 2
+    assert doc_types.count("system_design_document") == 6
+    assert doc_types.count("agent_case_summary") == 2
 
 
 def test_rag_search_requires_limit_multiple_of_five() -> None:
@@ -210,9 +210,9 @@ def test_rag_search_retrieves_limit_candidates_per_doc_type_before_rrf() -> None
         ("agent_case_summary", 10),
     ]
     doc_types = [result.metadata["doc_type"] for result in results]
-    assert doc_types.count("human_diagnosis_case") == 1
-    assert doc_types.count("system_design_document") == 8
-    assert doc_types.count("agent_case_summary") == 1
+    assert doc_types.count("human_diagnosis_case") == 2
+    assert doc_types.count("system_design_document") == 6
+    assert doc_types.count("agent_case_summary") == 2
     assert any("keyword" in result.text for result in results)
 
 

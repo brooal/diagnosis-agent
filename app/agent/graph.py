@@ -5,6 +5,7 @@ from langgraph.graph import StateGraph, END
 from app.agent.state import DiagnosisState
 from app.agent.nodes import (
     initialize_node,
+    retrieve_rag_node,
     plan_node,
     act_node,
     route_after_plan,
@@ -14,6 +15,7 @@ from app.agent.nodes import (
 )
 from app.llm.client import LLMClient
 from app.harness.service import HarnessService
+from app.rag.service import RagService
 from app.skills.common import SkillRegistry
 from app.tools.registry import ToolRegistry
 from app.tracing.db_recorder import DBTraceRecorder
@@ -26,12 +28,21 @@ def build_diagnosis_graph(
     recorder: DBTraceRecorder,
     harness: HarnessService,
     llm: LLMClient,
+    rag: RagService | None = None,
 ):
     graph = StateGraph(DiagnosisState)
 
     graph.add_node(
         "initialize",
         partial(initialize_node, recorder=recorder),
+    )
+    graph.add_node(
+        "retrieve_rag",
+        partial(
+            retrieve_rag_node,
+            rag=rag,
+            recorder=recorder,
+        ),
     )
     graph.add_node(
         "plan",
@@ -71,7 +82,8 @@ def build_diagnosis_graph(
         )
     )
     graph.set_entry_point("initialize")
-    graph.add_edge("initialize", "plan")
+    graph.add_edge("initialize", "retrieve_rag")
+    graph.add_edge("retrieve_rag", "plan")
     graph.add_conditional_edges(
         "plan",
         route_after_plan,

@@ -3,10 +3,12 @@ from __future__ import annotations
 from typing import Any
 
 from app.harness.service import HarnessService
+from app.agent.context_builder import build_rag_context
 from app.agent.state import DiagnosisState
 from app.llm.client import LLMClient
 from app.llm.parser import extract_json_object
 from app.llm.prompts import build_final_messages, build_react_messages
+from app.rag.service import RagService
 from app.skills.common import SkillRegistry
 from app.tools.registry import ToolRegistry
 from app.tracing.db_recorder import DBTraceRecorder
@@ -26,6 +28,8 @@ def initialize_node(
         "current_thought": None,
         "current_action": None,
         "react_history": [],
+        "rag_context": state.get("rag_context", {"enabled": False, "results": []}),
+        "rag_history": state.get("rag_history", []),
         "tool_history": [],
         "skill_history": [],
         "observations": [],
@@ -47,6 +51,76 @@ def initialize_node(
         },
     )
     return new_state
+
+
+def retrieve_rag_node(
+    state: DiagnosisState,
+    *,
+    rag: RagService | None,
+    recorder: DBTraceRecorder,
+) -> DiagnosisState:
+    if not state.get("enable_rag", False):
+        return {
+            **state,
+            "rag_context": {"enabled": False, "results": []},
+        }
+
+    limit = int(state.get("rag_limit", 5))
+    include_system_design = bool(state.get("rag_include_system_design", False))
+
+    if rag is None:
+        context = {
+            "enabled": True,
+            "limit": limit,
+            "include_system_design": include_system_design,
+            "results": [],
+            "error": "rag_service_not_configured",
+        }
+        recorder.append(
+            run_uid=state["run_uid"],
+            case_uid=state["case_uid"],
+            event_type="rag_retrieval_failed",
+            payload=context,
+        )
+        return {
+            **state,
+            "rag_context": context,
+            "rag_history": state.get("rag_history", []) + [context],
+        }
+
+    try:
+        context = build_rag_context(
+            rag,
+            state,
+            limit=limit,
+            include_system_design=include_system_design,
+        )
+        recorder.append(
+            run_uid=state["run_uid"],
+            case_uid=state["case_uid"],
+            event_type="rag_retrieved",
+            payload=context,
+        )
+    except Exception as exc:
+        context = {
+            "enabled": True,
+            "limit": limit,
+            "include_system_design": include_system_design,
+            "results": [],
+            "error": f"{type(exc).__name__}: {exc}",
+        }
+        recorder.append(
+            run_uid=state["run_uid"],
+            case_uid=state["case_uid"],
+            event_type="rag_retrieval_failed",
+            payload=context,
+        )
+
+    return {
+        **state,
+        "rag_context": context,
+        "rag_history": state.get("rag_history", []) + [context],
+    }
 
 
 # ReAct 计划节点：基于已有 observation 决定下一步单个动作。
@@ -83,6 +157,7 @@ def plan_node(
             time_window=state.get("time_window"),
             scope=state.get("scope"),
             conversation_context=state.get("conversation_context"),
+            rag_context=state.get("rag_context"),
             tool_specs=tools.list_spec(expose_to_agent_only=True),
             skill_specs=skills.list_spec(),
             react_history=state.get("react_history", []),
@@ -414,6 +489,7 @@ def summarize_node(
         messages = build_final_messages(
             user_query=state.get("user_query"),
             conversation_context=state.get("conversation_context"),
+            rag_context=state.get("rag_context"),
             observations=state.get("observations", []),
             evidence=evidence,
             candidate_causes=candidate_causes,

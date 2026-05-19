@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from app.analysis.beam_decay import DecayAnalysisConfig, analyze_topoff_decay
 from app.analysis.beam_fault import analyze_beam_faults
 from app.analysis.incident import analyze_incident
 from app.analysis.power_fault import analyze_power_faults
@@ -131,6 +132,49 @@ def _diagnose_incident_with(
         )
 
 
+def _diagnose_topoff_decay_with(
+    repo: object,
+    *,
+    settings: object,
+    start: str | None = None,
+    end: str | None = None,
+    fault_time: str | None = None,
+    beam_channel: str | None = None,
+    lookback_minutes: int | None = None,
+    lookahead_minutes: int | None = None,
+) -> ToolResult:
+    try:
+        config = DecayAnalysisConfig(
+            lookback_minutes=lookback_minutes or settings.decay_lookback_minutes,
+            lookahead_minutes=lookahead_minutes or settings.decay_lookahead_minutes,
+            recovery_lookahead_minutes=settings.decay_recovery_lookahead_minutes,
+            alarm_pre_window_minutes=settings.decay_alarm_pre_window_minutes,
+            alarm_post_window_seconds=settings.decay_alarm_post_window_seconds,
+            exact_match_window_seconds=settings.decay_exact_match_window_seconds,
+            drop_ratio_threshold=settings.decay_drop_ratio_threshold,
+            abnormal_point_ratio_threshold=settings.decay_abnormal_point_ratio_threshold,
+            abnormal_duration_seconds=settings.decay_abnormal_duration_seconds,
+            near_zero_ratio=settings.decay_near_zero_ratio,
+            absolute_low_threshold=settings.decay_absolute_low_threshold,
+        )
+        output = analyze_topoff_decay(
+            repo=repo,
+            start=start,
+            end=end,
+            fault_time=fault_time,
+            beam_channel=beam_channel or settings.default_beam_channel,
+            config=config,
+        )
+        return ToolResult(ok=True, output=output, summary=output["message"])
+    except Exception as exc:
+        return ToolResult(
+            ok=False,
+            output={},
+            summary="恒流中断/decay 诊断失败。",
+            error=f"{type(exc).__name__}: {exc}",
+        )
+
+
 def _runtime_repo_and_settings() -> tuple[object | None, object]:
     runtime = get_tool_runtime()
     return runtime.pv_repo, runtime.settings or get_settings()
@@ -183,6 +227,53 @@ def diagnose_beam_fault(
         normal_high=normal_high,
         absolute_drop_threshold=absolute_drop_threshold,
         relative_drop_threshold=relative_drop_threshold,
+    )
+
+
+@tool(
+    name="diagnose_topoff_decay",
+    description="基于 sample_raw 的 MODE/TOPOFF/温度状态量和束流曲线诊断恒流中断、decay 和相关掉束表现。",
+    parameters={
+        "type": "object",
+        "properties": {
+            "start": {"type": "string"},
+            "end": {"type": "string"},
+            "fault_time": {"type": "string"},
+            "beam_channel": {"type": "string"},
+            "lookback_minutes": {"type": "integer"},
+            "lookahead_minutes": {"type": "integer"},
+        },
+        "required": [],
+    },
+    category="diagnosis",
+    read_only=True,
+    expose_to_agent=False,
+)
+def diagnose_topoff_decay(
+    start: str | None = None,
+    end: str | None = None,
+    fault_time: str | None = None,
+    beam_channel: str | None = None,
+    lookback_minutes: int | None = None,
+    lookahead_minutes: int | None = None,
+) -> ToolResult:
+    repo, settings = _runtime_repo_and_settings()
+    if repo is None:
+        return ToolResult(
+            ok=False,
+            output={},
+            summary="PV 数据源未初始化。",
+            error="missing_pv_repo",
+        )
+    return _diagnose_topoff_decay_with(
+        repo,
+        settings=settings,
+        start=start,
+        end=end,
+        fault_time=fault_time,
+        beam_channel=beam_channel,
+        lookback_minutes=lookback_minutes,
+        lookahead_minutes=lookahead_minutes,
     )
 
 

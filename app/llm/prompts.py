@@ -83,6 +83,7 @@ def build_react_messages(
     time_window: dict | None,
     scope: dict | None,
     conversation_context: dict | None,
+    rag_context: dict | None,
     tool_specs: list[dict],
     skill_specs: list[dict],
     react_history: list[dict],
@@ -107,12 +108,15 @@ def build_react_messages(
 - 不要编造数据库中没有查询到的事实。
 - 如果需要事实依据，必须先调用 tool 或 skill。
 - 如果工具返回证据不足，可以继续调用其他工具或结束并说明证据不足。
+- 相关检索资料只作为背景参考；如果与 tool 或 skill 的实时结果冲突，以实时结果为准。
+- 引用检索资料时使用资料编号，例如 [RAG-1]。
 - 每次只选择一个 action。
 - 如果已经有足够证据，请选择 finish。
 """
 
     payload = {
         "conversation_context": conversation_context or {"recent_turns": []},
+        "retrieved_context": _render_rag_context(rag_context),
         "user_query": user_query,
         "time_window": time_window,
         "scope": scope,
@@ -168,6 +172,7 @@ def build_final_messages(
     *,
     user_query: str | None,
     conversation_context: dict | None,
+    rag_context: dict | None,
     observations: list[dict],
     evidence: list[dict],
     candidate_causes: list[dict],
@@ -182,11 +187,14 @@ def build_final_messages(
 2. 明确说明是否发生故障。
 3. 如果有候选原因，说明候选原因和依据。
 4. 如果证据不足，明确说明证据不足。
-5. 不要输出 JSON，输出自然语言。
+5. 相关检索资料只作为背景参考；如果与实时 observation 冲突，以实时 observation 为准。
+6. 如果引用检索资料，请使用资料编号，例如 [RAG-1]。
+7. 不要输出 JSON，输出自然语言。
 """
 
     payload = {
         "conversation_context": conversation_context or {"recent_turns": []},
+        "retrieved_context": _render_rag_context(rag_context),
         "user_query": user_query,
         "react_history": react_history,
         "observations": observations,
@@ -198,3 +206,55 @@ def build_final_messages(
         {"role": "system", "content": system.strip()},
         {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
     ]
+
+
+def _render_rag_context(rag_context: dict | None) -> str:
+    if not rag_context or not rag_context.get("enabled"):
+        return "未启用 RAG 检索。"
+    if rag_context.get("error"):
+        return f"RAG 检索失败：{rag_context['error']}"
+
+    results = rag_context.get("results") or []
+    if not results:
+        return "RAG 检索未返回相关资料。"
+
+    lines = [
+        "相关检索资料：",
+        "这些资料仅作为背景参考；实时 tool/skill observation 的优先级更高。",
+    ]
+    for index, item in enumerate(results, start=1):
+        metadata = item.get("metadata") or {}
+        doc_type = item.get("doc_type") or metadata.get("doc_type") or "unknown"
+        source = item.get("source") or metadata.get("source") or "unknown"
+        title = metadata.get("title")
+        section = metadata.get("section") or metadata.get("section_title")
+        case_id = metadata.get("case_id")
+        extra = _format_rag_metadata(
+            {
+                "title": title,
+                "section": section,
+                "case_id": case_id,
+            }
+        )
+        text = str(item.get("text") or "").strip()
+        if len(text) > 1200:
+            text = f"{text[:1200]}..."
+        lines.extend(
+            [
+                f"[RAG-{index}] 类型：{doc_type}",
+                f"来源：{source}",
+            ]
+        )
+        if extra:
+            lines.append(f"信息：{extra}")
+        lines.extend(["内容：", text])
+    return "\n".join(lines)
+
+
+def _format_rag_metadata(metadata: dict[str, object | None]) -> str:
+    parts = [
+        f"{key}={value}"
+        for key, value in metadata.items()
+        if value is not None and value != ""
+    ]
+    return "；".join(parts)

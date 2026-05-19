@@ -4,7 +4,7 @@ version: 1.0.0
 category: diagnosis
 domain: beam
 stage: phenomenon_detection
-description: Diagnose beam state within a time window and identify beam trip phenomena.
+description: Diagnose beam state within a time window and identify topoff decay, mode interruption, and beam trip phenomena.
 entrypoint: skill:BeamStateDiagnosisSkill
 symptoms:
   - beam_trip
@@ -34,4 +34,4 @@ parameters:
 
 # Beam State Diagnosis
 
-Use the beam diagnosis tool to determine whether the beam window contains a trip-like phenomenon.
+Use topoff decay and beam diagnosis tools to determine whether the beam window contains topoff decay, mode interruption, or trip-like phenomena.

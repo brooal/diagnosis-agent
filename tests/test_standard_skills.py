@@ -17,6 +17,17 @@ class FakeTools:
     def call(self, name: str, arguments: dict) -> ToolResult:
         self.calls.append((name, arguments))
 
+        if name == "diagnose_topoff_decay":
+            return ToolResult(
+                ok=True,
+                summary="未找到 MODE=0 恒流中断事件，束流曲线未见明确 decay 或掉束特征。",
+                output={
+                    "event_count": 0,
+                    "events": [],
+                    "overall_status": "normal",
+                },
+            )
+
         if name == "diagnose_beam_fault":
             return ToolResult(
                 ok=True,
@@ -149,7 +160,7 @@ def test_standard_skill_registry_discovers_builtin_skills() -> None:
     specs = registry.list_spec(include_versions=True)
 
     names = {spec["name"] for spec in specs}
-    assert {"beam_state_diagnosis", "quadrupole_power_diagnosis"} <= names
+    assert {"beam_state_diagnosis", "quadrupole_power_diagnosis", "decay_cause_analysis"} <= names
     beam_spec = next(spec for spec in specs if spec["name"] == "beam_state_diagnosis")
     assert beam_spec["category"] == "diagnosis"
     assert beam_spec["domain"] == "beam"
@@ -173,9 +184,17 @@ def test_beam_skill_calls_real_diagnosis_tool() -> None:
 
     assert result.ok
     assert result.output["phenomena"][0]["type"] == "beam_trip"
-    assert result.output["recommended_next_skills"][0]["name"] == "beam_trip_cause_analysis"
+    assert result.output["recommended_next_skills"][0]["name"] == "quadrupole_power_diagnosis"
     assert result.candidate_causes[0]["drop_time"] == "2026-05-06T10:02:31+09:00"
     assert tools.calls[0] == (
+        "diagnose_topoff_decay",
+        {
+            "start": "2026-05-06T10:00:00+09:00",
+            "end": "2026-05-06T10:05:00+09:00",
+            "beam_channel": "RING:BEAM:CURRENT",
+        },
+    )
+    assert tools.calls[1] == (
         "diagnose_beam_fault",
         {
             "start": "2026-05-06T10:00:00+09:00",

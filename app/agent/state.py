@@ -19,6 +19,11 @@ class DiagnosisState(TypedDict, total=False):
     time_window: dict[str, str] | None
     scope: dict[str, Any]
     conversation_context: dict[str, Any]
+    enable_rag: bool
+    rag_limit: int
+    rag_include_system_design: bool
+    rag_context: dict[str, Any]
+    rag_history: list[dict[str, Any]]
 
     # ReAct 执行控制
     step: int

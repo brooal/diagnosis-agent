@@ -38,6 +38,22 @@ class FakeRemoteDB:
 
 
 class FakePVRepo:
+    def fetch_raw_channel_samples(
+        self,
+        channel_ids: list[int],
+        start_time: str,
+        end_time: str,
+        limit: int | None = None,
+    ) -> list[SimpleNamespace]:
+        return []
+
+    def fetch_latest_raw_sample_before(
+        self,
+        channel_id: int,
+        before_time: str,
+    ) -> SimpleNamespace | None:
+        return None
+
     def fetch_channel_samples(
         self,
         channel_name: str,
@@ -98,6 +114,17 @@ class FakeSettings:
     power_window_seconds = 10
     default_power_pattern = "%QF%"
     power_relative_drop_threshold = 0.2
+    decay_lookback_minutes = 30
+    decay_lookahead_minutes = 10
+    decay_recovery_lookahead_minutes = 30
+    decay_alarm_pre_window_minutes = 10
+    decay_alarm_post_window_seconds = 60
+    decay_exact_match_window_seconds = 1
+    decay_drop_ratio_threshold = 0.03
+    decay_abnormal_point_ratio_threshold = 0.6
+    decay_abnormal_duration_seconds = 10
+    decay_near_zero_ratio = 0.15
+    decay_absolute_low_threshold = 100.0
 
 
 def _ensure_builtin_modules_loaded() -> ToolRegistry:
@@ -154,10 +181,12 @@ def test_build_tool_registry_filters_agent_visible_tools(
         "fetch_power_samples",
     } <= visible_names
     assert "diagnose_beam_fault" not in visible_names
+    assert "diagnose_topoff_decay" not in visible_names
     assert "diagnose_power_faults" not in visible_names
     assert "diagnose_incident" not in visible_names
     assert {
         "diagnose_beam_fault",
+        "diagnose_topoff_decay",
         "diagnose_power_faults",
         "diagnose_incident",
     } <= all_names

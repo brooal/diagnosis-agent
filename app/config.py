@@ -56,6 +56,13 @@ class Settings:
     archive_sample_time_col: str
     archive_sample_nanosecs_col: str
     archive_sample_float_col: str
+    archive_sample_raw_table: str
+    archive_sample_raw_channel_id_col: str
+    archive_sample_raw_time_col: str
+    archive_sample_raw_nanosecs_col: str
+    archive_sample_raw_num_val_col: str
+    archive_sample_raw_severity_id_col: str
+    archive_sample_raw_status_id_col: str
     archive_channel_id_col: str
     archive_channel_name_col: str
 
@@ -70,12 +77,32 @@ class Settings:
 
     power_window_seconds: int
     power_relative_drop_threshold: float
+    decay_lookback_minutes: int
+    decay_lookahead_minutes: int
+    decay_recovery_lookahead_minutes: int
+    decay_alarm_pre_window_minutes: int
+    decay_alarm_post_window_seconds: int
+    decay_exact_match_window_seconds: int
+    decay_drop_ratio_threshold: float
+    decay_abnormal_point_ratio_threshold: float
+    decay_abnormal_duration_seconds: int
+    decay_near_zero_ratio: float
+    decay_absolute_low_threshold: float
 
     # llm
     openai_api_key: str | None
     openai_base_url: str | None
     openai_model: str
     openai_temperature: float
+
+    # rag original document storage
+    minio_endpoint: str
+    minio_access_key: str
+    minio_secret_key: str
+    minio_bucket: str
+    minio_secure: bool
+    minio_region: str | None
+    minio_rag_raw_prefix: str
 
 
 def _build_diag_database_url() -> str:
@@ -130,6 +157,25 @@ def get_settings() -> Settings:
         archive_sample_time_col=os.getenv("ARCHIVE_SAMPLE_TIME_COL", "smpl_time"),
         archive_sample_nanosecs_col=os.getenv("ARCHIVE_SAMPLE_NANOSECS_COL", "nanosecs"),
         archive_sample_float_col=os.getenv("ARCHIVE_SAMPLE_FLOAT_COL", "float_val"),
+        archive_sample_raw_table=os.getenv("ARCHIVE_SAMPLE_RAW_TABLE", "public.sample_raw"),
+        archive_sample_raw_channel_id_col=os.getenv(
+            "ARCHIVE_SAMPLE_RAW_CHANNEL_ID_COL",
+            "channel_id",
+        ),
+        archive_sample_raw_time_col=os.getenv("ARCHIVE_SAMPLE_RAW_TIME_COL", "smpl_time"),
+        archive_sample_raw_nanosecs_col=os.getenv(
+            "ARCHIVE_SAMPLE_RAW_NANOSECS_COL",
+            "nanosecs",
+        ),
+        archive_sample_raw_num_val_col=os.getenv("ARCHIVE_SAMPLE_RAW_NUM_VAL_COL", "num_val"),
+        archive_sample_raw_severity_id_col=os.getenv(
+            "ARCHIVE_SAMPLE_RAW_SEVERITY_ID_COL",
+            "severity_id",
+        ),
+        archive_sample_raw_status_id_col=os.getenv(
+            "ARCHIVE_SAMPLE_RAW_STATUS_ID_COL",
+            "status_id",
+        ),
         archive_channel_id_col=os.getenv("ARCHIVE_CHANNEL_ID_COL", "channel_id"),
         archive_channel_name_col=os.getenv("ARCHIVE_CHANNEL_NAME_COL", "name"),
 
@@ -143,9 +189,31 @@ def get_settings() -> Settings:
 
         power_window_seconds=_get_int("POWER_WINDOW_SECONDS", 10),
         power_relative_drop_threshold=_get_float("POWER_RELATIVE_DROP_THRESHOLD", 0.2),
+        decay_lookback_minutes=_get_int("DECAY_LOOKBACK_MINUTES", 30),
+        decay_lookahead_minutes=_get_int("DECAY_LOOKAHEAD_MINUTES", 10),
+        decay_recovery_lookahead_minutes=_get_int("DECAY_RECOVERY_LOOKAHEAD_MINUTES", 30),
+        decay_alarm_pre_window_minutes=_get_int("DECAY_ALARM_PRE_WINDOW_MINUTES", 10),
+        decay_alarm_post_window_seconds=_get_int("DECAY_ALARM_POST_WINDOW_SECONDS", 60),
+        decay_exact_match_window_seconds=_get_int("DECAY_EXACT_MATCH_WINDOW_SECONDS", 1),
+        decay_drop_ratio_threshold=_get_float("DECAY_DROP_RATIO_THRESHOLD", 0.03),
+        decay_abnormal_point_ratio_threshold=_get_float(
+            "DECAY_ABNORMAL_POINT_RATIO_THRESHOLD",
+            0.6,
+        ),
+        decay_abnormal_duration_seconds=_get_int("DECAY_ABNORMAL_DURATION_SECONDS", 10),
+        decay_near_zero_ratio=_get_float("DECAY_NEAR_ZERO_RATIO", 0.15),
+        decay_absolute_low_threshold=_get_float("DECAY_ABSOLUTE_LOW_THRESHOLD", 100.0),
 
         openai_api_key=os.getenv("OPENAI_API_KEY"),
         openai_base_url=os.getenv("OPENAI_BASE_URL"),
         openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
         openai_temperature=_get_float("OPENAI_TEMPERATURE", 0.1),
+
+        minio_endpoint=os.getenv("MINIO_ENDPOINT", "127.0.0.1:9000"),
+        minio_access_key=os.getenv("MINIO_ACCESS_KEY", "minioadmin"),
+        minio_secret_key=os.getenv("MINIO_SECRET_KEY", "minioadmin"),
+        minio_bucket=os.getenv("MINIO_BUCKET", "diagnosis-rag"),
+        minio_secure=_get_bool("MINIO_SECURE", False),
+        minio_region=os.getenv("MINIO_REGION") or None,
+        minio_rag_raw_prefix=os.getenv("MINIO_RAG_RAW_PREFIX", "rag/raw"),
     )
