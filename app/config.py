@@ -88,6 +88,9 @@ class Settings:
     decay_abnormal_duration_seconds: int
     decay_near_zero_ratio: float
     decay_absolute_low_threshold: float
+    pss_pv_prefix: str
+    pss_event_lookback_seconds: int
+    pss_event_lookahead_seconds: int
 
     # llm
     openai_api_key: str | None
@@ -203,6 +206,9 @@ def get_settings() -> Settings:
         decay_abnormal_duration_seconds=_get_int("DECAY_ABNORMAL_DURATION_SECONDS", 10),
         decay_near_zero_ratio=_get_float("DECAY_NEAR_ZERO_RATIO", 0.15),
         decay_absolute_low_threshold=_get_float("DECAY_ABSOLUTE_LOW_THRESHOLD", 100.0),
+        pss_pv_prefix=os.getenv("PSS_PV_PREFIX", "HALF-BTP:PSS:"),
+        pss_event_lookback_seconds=_get_int("PSS_EVENT_LOOKBACK_SECONDS", 120),
+        pss_event_lookahead_seconds=_get_int("PSS_EVENT_LOOKAHEAD_SECONDS", 30),
 
         openai_api_key=os.getenv("OPENAI_API_KEY"),
         openai_base_url=os.getenv("OPENAI_BASE_URL"),

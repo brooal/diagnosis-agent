@@ -125,6 +125,9 @@ class FakeSettings:
     decay_abnormal_duration_seconds = 10
     decay_near_zero_ratio = 0.15
     decay_absolute_low_threshold = 100.0
+    pss_pv_prefix = "HALF-BTP:PSS:"
+    pss_event_lookback_seconds = 120
+    pss_event_lookahead_seconds = 30
 
 
 def _ensure_builtin_modules_loaded() -> ToolRegistry:
@@ -182,11 +185,13 @@ def test_build_tool_registry_filters_agent_visible_tools(
     } <= visible_names
     assert "diagnose_beam_fault" not in visible_names
     assert "diagnose_topoff_decay" not in visible_names
+    assert "diagnose_pss_emergency_unlock" not in visible_names
     assert "diagnose_power_faults" not in visible_names
     assert "diagnose_incident" not in visible_names
     assert {
         "diagnose_beam_fault",
         "diagnose_topoff_decay",
+        "diagnose_pss_emergency_unlock",
         "diagnose_power_faults",
         "diagnose_incident",
     } <= all_names

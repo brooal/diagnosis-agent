@@ -4,6 +4,7 @@ from app.analysis.beam_decay import DecayAnalysisConfig, analyze_topoff_decay
 from app.analysis.beam_fault import analyze_beam_faults
 from app.analysis.incident import analyze_incident
 from app.analysis.power_fault import analyze_power_faults
+from app.analysis.pss_emergency_unlock import analyze_pss_emergency_unlock
 from app.config import get_settings
 from app.data_sources.time_utils import build_center_window, parse_time_arg
 from app.tools.base import ToolResult, get_tool_runtime, tool
@@ -175,6 +176,39 @@ def _diagnose_topoff_decay_with(
         )
 
 
+def _diagnose_pss_emergency_unlock_with(
+    *,
+    settings: object,
+    event: dict | None = None,
+    context_events: list[dict] | None = None,
+    start: str | None = None,
+    end: str | None = None,
+    prefix: str | None = None,
+    seconds_before: int | None = None,
+    seconds_after: int | None = None,
+    use_demo_data: bool = False,
+) -> ToolResult:
+    try:
+        output = analyze_pss_emergency_unlock(
+            event=event,
+            context_events=context_events,
+            prefix=prefix or settings.pss_pv_prefix,
+            seconds_before=seconds_before or settings.pss_event_lookback_seconds,
+            seconds_after=seconds_after or settings.pss_event_lookahead_seconds,
+            start=start,
+            end=end,
+            use_demo_data=use_demo_data,
+        )
+        return ToolResult(ok=True, output=output, summary=output["summary"])
+    except Exception as exc:
+        return ToolResult(
+            ok=False,
+            output={},
+            summary="PSS 紧急解锁诊断失败。",
+            error=f"{type(exc).__name__}: {exc}",
+        )
+
+
 def _runtime_repo_and_settings() -> tuple[object | None, object]:
     runtime = get_tool_runtime()
     return runtime.pv_repo, runtime.settings or get_settings()
@@ -274,6 +308,51 @@ def diagnose_topoff_decay(
         beam_channel=beam_channel,
         lookback_minutes=lookback_minutes,
         lookahead_minutes=lookahead_minutes,
+    )
+
+
+@tool(
+    name="diagnose_pss_emergency_unlock",
+    description="根据传入的 PSS 紧急解锁事件和上下文事件，诊断 EmergencyUnlocked 的候选原因。",
+    parameters={
+        "type": "object",
+        "properties": {
+            "event": {"type": "object"},
+            "context_events": {"type": "array"},
+            "start": {"type": "string"},
+            "end": {"type": "string"},
+            "prefix": {"type": "string"},
+            "seconds_before": {"type": "integer"},
+            "seconds_after": {"type": "integer"},
+            "use_demo_data": {"type": "boolean"},
+        },
+        "required": [],
+    },
+    category="diagnosis",
+    read_only=True,
+    expose_to_agent=False,
+)
+def diagnose_pss_emergency_unlock(
+    event: dict | None = None,
+    context_events: list[dict] | None = None,
+    start: str | None = None,
+    end: str | None = None,
+    prefix: str | None = None,
+    seconds_before: int | None = None,
+    seconds_after: int | None = None,
+    use_demo_data: bool = False,
+) -> ToolResult:
+    _repo, settings = _runtime_repo_and_settings()
+    return _diagnose_pss_emergency_unlock_with(
+        settings=settings,
+        event=event,
+        context_events=context_events,
+        start=start,
+        end=end,
+        prefix=prefix,
+        seconds_before=seconds_before,
+        seconds_after=seconds_after,
+        use_demo_data=use_demo_data,
     )
 
 
