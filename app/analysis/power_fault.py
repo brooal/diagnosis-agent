@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime
 
 from app.data_sources.schemas import PVSample
 from app.data_sources.time_utils import build_center_window, parse_iso_datetime

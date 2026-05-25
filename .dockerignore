@@ -1,0 +1,13 @@
+.git
+.idea
+.venv
+__pycache__
+*.py[cod]
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.qdrant
+diagnosis_agent.db
+*.db
+.env
+docker-data

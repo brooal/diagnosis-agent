@@ -11,10 +11,18 @@ from app.rag import build_rag_service
 from app.skills import build_skill_registry
 from app.tools import build_tool_registry
 from sqlalchemy.orm import Session
+from app.db.init_db import init_db
+from app.db.session import SessionLocal
 from app.tracing.db_recorder import DBTraceRecorder
 
 class DiagnosisAgentRunner:
-    def __init__(self, db: Session) ->None:
+    def __init__(self, db: Session | None = None) ->None:
+        if db is None:
+            init_db()
+            db = SessionLocal()
+            self._owns_db = True
+        else:
+            self._owns_db = False
         self.db = db
         self.harness = HarnessService(db)
         self.recorder = DBTraceRecorder(self.harness)
@@ -33,6 +41,10 @@ class DiagnosisAgentRunner:
             llm = self.llm,
             rag = self.rag,
         )
+
+    def close(self) -> None:
+        if self._owns_db:
+            self.db.close()
 
     def run_chat(
             self,

@@ -1,10 +1,9 @@
-import unittest
+from app.skills import build_skill_registry
 
 
-class MyTestCase(unittest.TestCase):
-    def test_something(self):
-        self.assertEqual(True, False)  # add assertion here
+def test_builtin_skills_are_discovered() -> None:
+    registry = build_skill_registry()
+    names = {item["name"] for item in registry.list_spec()}
 
-
-if __name__ == '__main__':
-    unittest.main()
+    assert "beam_state_diagnosis" in names
+    assert "quadrupole_power_diagnosis" in names

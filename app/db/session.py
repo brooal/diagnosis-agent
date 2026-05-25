@@ -3,27 +3,36 @@ from __future__ import annotations
 import os
 
 from sqlalchemy import create_engine
-from  sqlalchemy.orm import sessionmaker, DeclarativeBase
+from dotenv import load_dotenv
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-# DATABASE_URL = os.getenv("DATABASE_URL")
-DATABASE_URL = "sqlite:///./diagnosis_agent.db"
+load_dotenv()
+
+DATABASE_URL = os.getenv("APP_DATABASE_URL") or os.getenv("DATABASE_URL", "sqlite:///./diagnosis_agent.db")
+APP_DB_ECHO = os.getenv("APP_DB_ECHO", "false").lower() in {"1", "true", "yes", "y", "on"}
+
 
 class Base(DeclarativeBase):
     pass
 
+
+connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+
 engine = create_engine(
     DATABASE_URL,
-    echo = True, #打印SQL语句到控制台
+    echo=APP_DB_ECHO,
     future=True,
-    connect_args={"check_same_thread": False}, #默认情况下sqlite只允许一个线程访问，设置false允许多线程环境下运行
+    connect_args=connect_args,
+)
 
-)
-SessionLocal = sessionmaker(#每次调用SessionLocal，会产生一个独立的事务环境
-    bind = engine,
-    autoflush=False, #不自动同步数据，明确同步的时候才同步
+SessionLocal = sessionmaker(
+    bind=engine,
+    autoflush=False,
     autocommit=False,
-    future= True,
+    future=True,
 )
+
+
 def get_session():
     db = SessionLocal()
     try:

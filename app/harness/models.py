@@ -9,10 +9,9 @@ from sqlalchemy import (
     Text,
     Integer,
     DateTime,
-    ForeignKey,
     Boolean,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import JSON
 
 from app.db.session import Base

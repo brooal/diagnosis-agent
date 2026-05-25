@@ -1,0 +1,57 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: diagnosis-agent-qdrant-local
+    ports:
+      - "7333:6333"
+      - "7334:6334"
+    volumes:
+      - diagnosis_qdrant_data:/qdrant/storage
+
+  minio:
+    image: minio/minio:latest
+    container_name: diagnosis-agent-minio-local
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9100:9000"
+      - "9101:9001"
+    volumes:
+      - diagnosis_minio_data:/data
+
+  archive-db:
+    image: timescale/timescaledb:latest-pg16
+    container_name: diagnosis-agent-archive-db-local
+    environment:
+      POSTGRES_DB: archive_db
+      POSTGRES_USER: readonly_user
+      POSTGRES_PASSWORD: change_me
+      TZ: Asia/Shanghai
+    ports:
+      - "55432:5432"
+    volumes:
+      - diagnosis_archive_db_data:/var/lib/postgresql/data
+      - ./docker/init_archive_db.sql:/docker-entrypoint-initdb.d/10-init-archive-db.sql:ro
+
+  app-init:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    container_name: diagnosis-agent-app-init-local
+    profiles: ["app"]
+    env_file:
+      - .env.local.example
+    volumes:
+      - .:/app
+    depends_on:
+      - qdrant
+      - minio
+      - archive-db
+    command: ["uv", "run", "python", "-m", "app.db.init_db"]
+
+volumes:
+  diagnosis_qdrant_data:
+  diagnosis_minio_data:
+  diagnosis_archive_db_data:

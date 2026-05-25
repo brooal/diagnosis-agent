@@ -43,8 +43,8 @@ class PVRepository:
             JOIN {s.archive_channel_table} AS c
               ON s.{s.archive_sample_channel_id_col} = c.{s.archive_channel_id_col}
             WHERE c.{s.archive_channel_name_col} = :channel_name
-              AND s.{s.archive_sample_time_col} >= :start_time::timestamptz
-              AND s.{s.archive_sample_time_col} <= :end_time::timestamptz
+              AND s.{s.archive_sample_time_col} >= CAST(:start_time AS timestamptz)
+              AND s.{s.archive_sample_time_col} <= CAST(:end_time AS timestamptz)
             ORDER BY s.{s.archive_sample_time_col}, s.{s.archive_sample_nanosecs_col}
             LIMIT :limit
             """
@@ -92,8 +92,8 @@ class PVRepository:
             JOIN {s.archive_channel_table} AS c
               ON s.{s.archive_sample_channel_id_col} = c.{s.archive_channel_id_col}
             WHERE c.{s.archive_channel_name_col} ILIKE :pattern
-              AND s.{s.archive_sample_time_col} >= :start_time::timestamptz
-              AND s.{s.archive_sample_time_col} <= :end_time::timestamptz
+              AND s.{s.archive_sample_time_col} >= CAST(:start_time AS timestamptz)
+              AND s.{s.archive_sample_time_col} <= CAST(:end_time AS timestamptz)
             ORDER BY c.{s.archive_channel_name_col},
                      s.{s.archive_sample_time_col},
                      s.{s.archive_sample_nanosecs_col}
@@ -148,8 +148,8 @@ class PVRepository:
             LEFT JOIN {s.archive_channel_table} AS c
               ON s.{s.archive_sample_raw_channel_id_col} = c.{s.archive_channel_id_col}
             WHERE s.{s.archive_sample_raw_channel_id_col} IN :channel_ids
-              AND s.{s.archive_sample_raw_time_col} >= :start_time::timestamptz
-              AND s.{s.archive_sample_raw_time_col} <= :end_time::timestamptz
+              AND s.{s.archive_sample_raw_time_col} >= CAST(:start_time AS timestamptz)
+              AND s.{s.archive_sample_raw_time_col} <= CAST(:end_time AS timestamptz)
             ORDER BY s.{s.archive_sample_raw_channel_id_col},
                      s.{s.archive_sample_raw_time_col},
                      s.{s.archive_sample_raw_nanosecs_col}
@@ -190,7 +190,7 @@ class PVRepository:
             LEFT JOIN {s.archive_channel_table} AS c
               ON s.{s.archive_sample_raw_channel_id_col} = c.{s.archive_channel_id_col}
             WHERE s.{s.archive_sample_raw_channel_id_col} = :channel_id
-              AND s.{s.archive_sample_raw_time_col} < :before_time::timestamptz
+              AND s.{s.archive_sample_raw_time_col} < CAST(:before_time AS timestamptz)
             ORDER BY s.{s.archive_sample_raw_time_col} DESC,
                      s.{s.archive_sample_raw_nanosecs_col} DESC
             LIMIT 1
@@ -221,7 +221,9 @@ class PVRepository:
             params["expected_value"] = expected_value
         end_clause = ""
         if end_time is not None:
-            end_clause = f"AND s.{s.archive_sample_raw_time_col} <= :end_time::timestamptz"
+            end_clause = (
+                f"AND s.{s.archive_sample_raw_time_col} <= CAST(:end_time AS timestamptz)"
+            )
             params["end_time"] = end_time
 
         sql = text(
@@ -238,7 +240,7 @@ class PVRepository:
             LEFT JOIN {s.archive_channel_table} AS c
               ON s.{s.archive_sample_raw_channel_id_col} = c.{s.archive_channel_id_col}
             WHERE s.{s.archive_sample_raw_channel_id_col} = :channel_id
-              AND s.{s.archive_sample_raw_time_col} > :after_time::timestamptz
+              AND s.{s.archive_sample_raw_time_col} > CAST(:after_time AS timestamptz)
               {value_clause}
               {end_clause}
             ORDER BY s.{s.archive_sample_raw_time_col},

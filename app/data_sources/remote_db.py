@@ -49,7 +49,7 @@ class RemoteDB:
                 current_database() AS database, 
                 current_user AS "user",
                 current_setting('TIMEZONE') AS session_timezone,
-                to_char(NOW(), 'YYYY-MM-DD"T"HH24:MI:SS') || to_char(NOW(), 'TZH:TZM' AS now
+                to_char(NOW(), 'YYYY-MM-DD"T"HH24:MI:SS') || to_char(NOW(), 'TZH:TZM') AS now
             """
         )
 
