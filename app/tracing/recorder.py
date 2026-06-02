@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 from typing import Any
 from pathlib import Path
-from datetime import datetime
+
+from app.utils.json import make_json_safe
+from app.utils.times import now_shanghai
 
 class TraceRecorder:
 
@@ -12,7 +14,7 @@ class TraceRecorder:
         self.trace_dir.mkdir(parents= True, exist_ok = True)
 
     def create_trace_id(self, case_id : str) -> str:
-        return f"{case_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        return f"{case_id}_{now_shanghai().strftime('%Y%m%d_%H%M%S')}"
 
 
     def append(
@@ -25,13 +27,11 @@ class TraceRecorder:
         path = self.trace_dir / f"{trace_id}.jsonl"
 
         record = {
-            "time" : datetime.now().isoformat(timespec = "seconds"),
+            "time" : now_shanghai().isoformat(timespec = "seconds"),
             "case_id" : case_id,
             "event_type" : event_type,
             "payload" : payload,
         }
         with path.open("w", encoding = "utf-8") as f:
-            f.write(json.dumps(record,ensure_ascii = False) + "\n")
-
-
+            f.write(json.dumps(make_json_safe(record), ensure_ascii=False) + "\n")
 

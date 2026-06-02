@@ -483,14 +483,16 @@ def summarize_node(
 ) -> DiagnosisState:
     evidence = state.get("evidence", [])
     candidate_causes = state.get("candidate_causes", [])
+    observations = state.get("observations", [])
     final_answer = state.get("final_answer")
 
-    if not final_answer:
+    should_generate_report = bool(observations or evidence or candidate_causes)
+    if not final_answer or should_generate_report:
         messages = build_final_messages(
             user_query=state.get("user_query"),
             conversation_context=state.get("conversation_context"),
             rag_context=state.get("rag_context"),
-            observations=state.get("observations", []),
+            observations=observations,
             evidence=evidence,
             candidate_causes=candidate_causes,
             react_history=state.get("react_history", []),

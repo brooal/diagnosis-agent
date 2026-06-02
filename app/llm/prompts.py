@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import json
 
+from app.utils.json import make_json_safe
+from app.utils.times import now_shanghai_aware
+
 def build_planner_messages(
         *,
         user_query : str,
@@ -21,11 +24,24 @@ def build_planner_messages(
 优先选择skill完整完整的诊断任务。
 只有当用户询问非常简单的问题时，才选择tool。
 不要编造不存在的tool或skill。
+
+自然语言理解规则：
+1. time_window 和 scope 可能为空，表示用户只输入了自然语言。
+2. 你需要先判断用户意图：
+   - 如果是闲聊、询问概念、询问系统能力、询问如何使用、或没有诊断/实时查询意图，不要调用 tool/skill，返回空 plan，并在 intent 中说明是普通问答。
+   - 如果是故障诊断或历史数据查询，必须从 user_query 中抽取诊断时间和诊断对象，写入 plan.arguments。
+   - 如果用户有诊断意图但没有提供可执行的时间点或时间范围，返回空 plan，并在 intent 中说明需要用户补充时间；但“当前PSS状态/现在安全联锁状态”属于例外，按当前 fake 数据演示模式处理。
+3. 时间表达可以来自用户自然语言，例如“2026-05-06 10:00到10:05”“今天10:00到10:05”“昨天10:00到10:05”。相对日期按 current_datetime/timezone 解释。
+4. 如果问题涉及束流、束流电流、掉束、beam trip、decay、topoff/恒流中断，优先选择 beam_state_diagnosis，并在 arguments 中填 start/end。不要要求用户明示束流 PV；若用户没有提供 PV，不填 beam_channel/beam_current_pv，让 skill 使用默认配置。
+5. 如果 beam_state_diagnosis 的结果显示存在束流故障、beam_drop、beam_trip、decay 或 topoff 中断现象，应查看该 skill 输出中的 recommended_next_skills，并按推荐继续调用当前已实现的原因诊断 skill。当前 quadrupole_power_diagnosis 只是已接入的一类原因排查，不代表全部故障原因；不要要求用户必须提到四极铁才继续排查。
+6. 如果问题涉及 PSS、安全联锁、联锁中断、interlocked/unlocked，优先选择 pss_interlock_interrupt_diagnosis；历史诊断要在 arguments 中填 start/end；如果用户询问“当前PSS状态/现在PSS状态/当前安全联锁状态”且没有给出时间窗口，arguments 中设置 use_current_fake_data=true，用当前上海时间生成本地演示 fake 数据；不要把 sysStatus_Eunlocked:bi 当作根因。
 """
     user = {
         "user_query": user_query,
         "time_window": time_window,
         "scope": scope,
+        "current_datetime": now_shanghai_aware().isoformat(),
+        "timezone": "Asia/Shanghai",
         "available_tools" : tool_specs,
         "available_skills" : skill_specs,
         "output_schema": {
@@ -43,7 +59,7 @@ def build_planner_messages(
 
     return [
         {"role" : "system", "content" : system.strip()},
-        {"role" : "user", "content" : json.dumps(user,ensure_ascii=False)},
+        {"role" : "user", "content" : _dump_json(user)},
     ]
 
 def build_summerize_messages(
@@ -73,7 +89,7 @@ def build_summerize_messages(
     }
     return [
         {"role" : "system", "content" : system.strip()},
-        {"role" : "user", "content" : json.dumps(user,ensure_ascii=False)},
+        {"role" : "user", "content" : _dump_json(user)},
     ]
 
 
@@ -112,10 +128,31 @@ def build_react_messages(
 - 引用检索资料时使用资料编号，例如 [RAG-1]。
 - 每次只选择一个 action。
 - 如果已经有足够证据，请选择 finish。
+- finish 的 final_answer 只是草稿；最终报告会由报告生成器统一规范化。PSS 诊断草稿也不要使用“候选原因/候选根因”，应表述为“诊断结果是...”。
+
+自然语言理解规则：
+- time_window 和 scope 可能为空；这表示调用方只传入了自然语言 user_query。
+- 你必须先判断用户问题类型：
+  1. 如果用户是在闲聊、询问系统能力、询问概念、询问如何使用、或没有诊断/查询实时数据的意图，选择 finish，直接回答，不要调用 tool/skill。
+  2. 如果用户有故障诊断或历史数据查询意图，你要从 user_query 中抽取时间窗口和诊断对象，并把它们写入下一步 action 的 arguments。
+  3. 如果用户有诊断意图但没有给出可执行的时间点或时间范围，选择 finish，礼貌要求用户补充具体时间，不要调用 tool/skill；但“当前PSS状态/现在安全联锁状态”属于例外，应调用 PSS skill 并设置 use_current_fake_data=true。
+- 时间抽取要求：
+  - 支持“2026-05-06 10:00到10:05”“2026年5月6日10:00到10:05”“今天10:00到10:05”“昨天10:00到10:05”等表达。
+  - 相对日期必须基于 payload.current_datetime 和 payload.timezone 解释。
+  - 传给 tool/skill 时尽量使用 ISO 格式，例如 2026-05-06T10:00:00+08:00。
+- 诊断对象和后续动作要求：
+  - 如果用户提到束流、束流电流、掉束、beam trip、decay、topoff/恒流中断，优先调用 beam_state_diagnosis，arguments 中包含 start/end。不要要求用户明示束流 PV；若用户没有提供 PV，不填 beam_channel/beam_current_pv，让 skill 使用默认配置。
+  - 如果 beam_state_diagnosis 的 observation 显示存在束流故障、beam_drop、beam_trip、decay 或 topoff 中断现象，应查看该 skill 输出中的 recommended_next_skills，并按推荐继续调用当前已实现的原因诊断 skill。
+  - 当前 quadrupole_power_diagnosis 只是已接入的一类束流故障原因排查，不代表全部故障原因；不要要求用户必须提到四极铁才调用后续原因排查。
+  - 如果用户提到 PSS、安全联锁、联锁中断、interlocked/unlocked，优先调用 pss_interlock_interrupt_diagnosis；历史诊断时 arguments 中包含 start/end；PSS 前缀可从用户文本抽取为 prefix，否则不填。
+  - 如果用户询问“当前PSS状态/现在PSS状态/当前安全联锁状态”等当前状态问题且没有给出时间窗口，调用 pss_interlock_interrupt_diagnosis，并设置 arguments.use_current_fake_data=true。该模式用于本地演示：工具会用当前上海时间随机模拟一次 interlocked->unlocked 变化，并在七类 fake 原因中随机选择一种。
+  - 不要把 sysStatus_Eunlocked:bi 当作 PSS 根因；它只能作为伴随状态，PSS 原因应由 interlocked->unlocked 事件后的原因 PV 回溯确定。
 """
 
     payload = {
         "conversation_context": conversation_context or {"recent_turns": []},
+        "current_datetime": now_shanghai_aware().isoformat(),
+        "timezone": "Asia/Shanghai",
         "retrieved_context": _render_rag_context(rag_context),
         "user_query": user_query,
         "time_window": time_window,
@@ -135,21 +172,20 @@ def build_react_messages(
         },
         "examples": [
             {
-                "thought": "用户询问某时间段是否发生掉束，需要先调用束流故障诊断工具。",
-                "action_type": "tool",
-                "action_name": "diagnose_beam_fault",
+                "thought": "用户询问某时间段是否发生掉束或 decay，需要先调用束流状态诊断 skill；用户未提供束流 PV，因此不传 beam_channel，使用默认配置。",
+                "action_type": "skill",
+                "action_name": "beam_state_diagnosis",
                 "arguments": {
                     "start": "2026-05-06 10:00:00",
                     "end": "2026-05-06 10:05:00"
                 }
             },
             {
-                "thought": "已经检测到束流掉束，需要围绕掉束时间查询电源异常。",
-                "action_type": "tool",
-                "action_name": "diagnose_power_faults",
+                "thought": "beam_state_diagnosis 已检测到束流故障，并推荐继续调用 quadrupole_power_diagnosis；这是当前已接入的一类原因排查。",
+                "action_type": "skill",
+                "action_name": "quadrupole_power_diagnosis",
                 "arguments": {
-                    "fault_time": "2026-05-06T10:02:31+08:00",
-                    "window_seconds": 10
+                    "fault_time": "2026-05-06T10:02:31+08:00"
                 }
             },
             {
@@ -157,14 +193,14 @@ def build_react_messages(
                 "action_type": "finish",
                 "action_name": "",
                 "arguments": {},
-                "final_answer": "根据查询结果，检测到束流掉束，并发现候选电源异常..."
+                "final_answer": "根据查询结果，检测到束流掉束，并发现电源异常证据..."
             }
         ],
     }
 
     return [
         {"role": "system", "content": system.strip()},
-        {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+        {"role": "user", "content": _dump_json(payload)},
     ]
 
 
@@ -180,16 +216,40 @@ def build_final_messages(
 ) -> list[dict]:
     system = """
 你是加速器故障诊断报告生成器。
-请根据 observation、证据和候选原因，生成简洁、可信、可追溯的中文诊断结论。
+请根据 observation、证据和结构化诊断结果，生成规范、专业、可截图用于论文展示的最终诊断报告。
 
 要求：
 1. 不要编造证据中没有的信息。
-2. 明确说明是否发生故障。
-3. 如果有候选原因，说明候选原因和依据。
-4. 如果证据不足，明确说明证据不足。
+2. 输出语言必须跟随用户问题：用户问题主要为英文时输出英文；否则输出中文。
+3. 不要使用“候选原因”“候选根因”“可能根因”作为最终表述；如果证据充分，直接写“诊断结果是……”或“Diagnosis result: ...”。
+4. 如果证据不足，写“诊断结果：证据不足，暂不能确定直接原因”，并说明缺少什么证据。
 5. 相关检索资料只作为背景参考；如果与实时 observation 冲突，以实时 observation 为准。
 6. 如果引用检索资料，请使用资料编号，例如 [RAG-1]。
-7. 不要输出 JSON，输出自然语言。
+7. 不要输出 JSON，输出自然语言。可以使用 Markdown 标题和列表，便于前端渲染和论文截图。
+
+PSS 安全联锁诊断报告格式要求：
+- 如果 observation 或 skill 名称涉及 pss_interlock_interrupt_diagnosis、PSS、安全联锁、interlocked/unlocked，请使用下面的固定结构。
+- 如果 observation/tool_output 中包含 fake_data.mode=current_fake，不要在最终报告中展示“本地模拟 fake 数据”“不代表真实线上状态”等数据来源说明；该标记仅用于后端调试和测试。
+- 中文结构：
+  ## PSS安全联锁异常诊断报告
+  **诊断结果：** 用一句话说明直接诊断结论，例如“诊断结果是第 3 个急停按钮触发导致 PSS 由联锁状态转为解锁状态。”
+  **事件概况：** 写明检测时间窗口、事件时间、状态变化（interlocked -> unlocked）。
+  **关键证据：**
+  - 状态迁移证据：列出 sysStatus_interlocked 和 sysStatus_unlocked 的变化及时间。
+  - 直接原因证据：列出直接原因 PV、变化、时间、相对事件时间、置信度。
+  - 伴随状态：列出 sysStatus_Eunlocked 或 interlock output 等伴随/结果状态，并明确“该状态不是直接原因证据”。
+  **结论说明：** 用 1-2 句话说明为什么该 PV 被判定为直接原因，以及是否需要进一步复查。
+- 英文结构：
+  ## PSS Interlock Abnormality Diagnosis Report
+  **Diagnosis result:** ...
+  **Event overview:** ...
+  **Key evidence:**
+  - State transition evidence: ...
+  - Direct-cause evidence: ...
+  - Accompanying states: ...
+  **Conclusion:** ...
+- PSS 报告中不要使用“候选原因/候选根因/candidate cause/candidate root cause”等词；可以使用“直接原因证据”“伴随状态”“结构化证据”。
+- 对 sysStatus_Eunlocked:bi 的表述必须规范：它是紧急解锁状态或伴随结果状态，不应作为直接原因，除非 evidence 中存在明确人工紧急解锁命令 PV。
 """
 
     payload = {
@@ -204,8 +264,12 @@ def build_final_messages(
 
     return [
         {"role": "system", "content": system.strip()},
-        {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+        {"role": "user", "content": _dump_json(payload)},
     ]
+
+
+def _dump_json(payload: dict) -> str:
+    return json.dumps(make_json_safe(payload), ensure_ascii=False)
 
 
 def _render_rag_context(rag_context: dict | None) -> str:

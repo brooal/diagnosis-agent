@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -165,3 +167,26 @@ def test_react_prompt_renders_rag_context_as_text() -> None:
     assert isinstance(payload["retrieved_context"], str)
     assert "[RAG-1] 类型：human_diagnosis_case" in payload["retrieved_context"]
     assert "历史经验内容" in payload["retrieved_context"]
+
+
+def test_react_prompt_accepts_datetime_evidence() -> None:
+    observed_at = datetime(2026, 5, 24, 22, 32, 17, tzinfo=ZoneInfo("Asia/Shanghai"))
+
+    messages = build_react_messages(
+        user_query="诊断束流状况",
+        time_window=None,
+        scope=None,
+        conversation_context=None,
+        rag_context=None,
+        tool_specs=[],
+        skill_specs=[],
+        react_history=[],
+        observations=[{"output": {"time": observed_at}}],
+        evidence=[{"time": observed_at}],
+        candidate_causes=[{"time": observed_at}],
+    )
+
+    payload = json.loads(messages[1]["content"])
+    assert payload["recent_observations"][0]["output"]["time"] == "2026-05-24T22:32:17+08:00"
+    assert payload["evidence"][0]["time"] == "2026-05-24T22:32:17+08:00"
+    assert payload["candidate_causes"][0]["time"] == "2026-05-24T22:32:17+08:00"

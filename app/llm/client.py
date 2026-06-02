@@ -5,6 +5,9 @@ from __future__ import annotations
 import os
 from openai import OpenAI
 from typing import Any
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class LLMClient:
     def __init__(self) -> None:

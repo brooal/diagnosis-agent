@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import importlib
 
+from app.archive_repository.factory import build_archive_repository
 from app.config import get_settings
-from app.data_sources.pv_repository import PVRepository
-from app.data_sources.remote_db import RemoteDB
 from app.tools.base import ToolRegistry, get_tool_registry, set_tool_runtime
 
 _BUILTIN_TOOL_MODULES = (
@@ -27,8 +26,7 @@ def _load_builtin_tool_modules() -> None:
 
 
 def build_tool_registry() -> ToolRegistry:
-    remote_db = RemoteDB()
-    pv_repo = PVRepository(remote_db)
+    pv_repo, remote_db = build_archive_repository()
     set_tool_runtime(
         remote_db=remote_db,
         pv_repo=pv_repo,

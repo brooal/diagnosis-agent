@@ -1,12 +1,20 @@
 from __future__ import annotations
 
+from datetime import timedelta
+
 from app.analysis.beam_decay import DecayAnalysisConfig, analyze_topoff_decay
 from app.analysis.beam_fault import analyze_beam_faults
 from app.analysis.incident import analyze_incident
 from app.analysis.power_fault import analyze_power_faults
-from app.analysis.pss_emergency_unlock import analyze_pss_emergency_unlock
+from app.analysis.pss_interlock_interrupt import analyze_pss_interlock_interrupt
 from app.config import get_settings
-from app.data_sources.time_utils import build_center_window, parse_time_arg
+from app.data_sources.fake_pss_archive import (
+    build_current_fake_pss_raw_samples,
+    build_fake_pss_raw_samples,
+    fake_raw_samples_to_events,
+)
+from app.data_sources.time_utils import build_center_window, parse_iso_datetime, parse_time_arg
+from app.diagnosis.pss_catalog import pss_all_diagnosis_pv_names
 from app.tools.base import ToolResult, get_tool_runtime, tool
 
 
@@ -176,7 +184,8 @@ def _diagnose_topoff_decay_with(
         )
 
 
-def _diagnose_pss_emergency_unlock_with(
+def _diagnose_pss_interlock_interrupt_with(
+    repo: object | None = None,
     *,
     settings: object,
     event: dict | None = None,
@@ -186,25 +195,73 @@ def _diagnose_pss_emergency_unlock_with(
     prefix: str | None = None,
     seconds_before: int | None = None,
     seconds_after: int | None = None,
-    use_demo_data: bool = False,
+    use_remote_db: bool | None = None,
+    use_current_fake_data: bool | None = None,
+    fake_seed: int | str | None = None,
+    fake_scenario_id: str | None = None,
 ) -> ToolResult:
     try:
-        output = analyze_pss_emergency_unlock(
+        prefix = prefix or settings.pss_pv_prefix
+        context_events = list(context_events or [])
+        fake_metadata: dict | None = None
+        should_use_remote_db = settings.pss_use_remote_db if use_remote_db is None else use_remote_db
+        if use_current_fake_data and not context_events and not event:
+            samples, fake_metadata = build_current_fake_pss_raw_samples(
+                prefix=prefix,
+                fake_seed=fake_seed,
+                scenario_id=fake_scenario_id,
+            )
+            context_events = fake_raw_samples_to_events(samples)
+            if start is None:
+                start = fake_metadata["query_window"]["start"]
+            if end is None:
+                end = fake_metadata["query_window"]["end"]
+            should_use_remote_db = False
+        elif not context_events and not event and not should_use_remote_db:
+            samples = build_fake_pss_raw_samples(prefix=prefix, start=start, end=end)
+            context_events = fake_raw_samples_to_events(samples)
+        elif repo is not None and start and end and not context_events:
+            start_dt = parse_time_arg(start)
+            end_dt = parse_time_arg(end)
+            start_iso = (
+                parse_iso_datetime(start_dt) - timedelta(seconds=seconds_before or 5)
+            ).isoformat()
+            end_iso = (
+                parse_iso_datetime(end_dt) + timedelta(seconds=seconds_after or 2)
+            ).isoformat()
+            samples = repo.fetch_raw_pv_samples(
+                pv_names=pss_all_diagnosis_pv_names(prefix=prefix),
+                start_time=start_iso,
+                end_time=end_iso,
+            )
+            context_events = [
+                {
+                    "pv": item.channel_name,
+                    "value": item.num_val,
+                    "time": item.smpl_time,
+                    "nanosecs": item.nanosecs,
+                }
+                for item in samples
+                if item.channel_name is not None
+            ]
+        output = analyze_pss_interlock_interrupt(
             event=event,
             context_events=context_events,
-            prefix=prefix or settings.pss_pv_prefix,
-            seconds_before=seconds_before or settings.pss_event_lookback_seconds,
-            seconds_after=seconds_after or settings.pss_event_lookahead_seconds,
+            prefix=prefix,
+            seconds_before=seconds_before or 5,
+            seconds_after=seconds_after or 2,
             start=start,
             end=end,
-            use_demo_data=use_demo_data,
+            use_fake_data=not should_use_remote_db and not context_events,
         )
+        if fake_metadata:
+            output["fake_data"] = fake_metadata
         return ToolResult(ok=True, output=output, summary=output["summary"])
     except Exception as exc:
         return ToolResult(
             ok=False,
             output={},
-            summary="PSS 紧急解锁诊断失败。",
+            summary="PSS 联锁中断诊断失败。",
             error=f"{type(exc).__name__}: {exc}",
         )
 
@@ -312,8 +369,11 @@ def diagnose_topoff_decay(
 
 
 @tool(
-    name="diagnose_pss_emergency_unlock",
-    description="根据传入的 PSS 紧急解锁事件和上下文事件，诊断 EmergencyUnlocked 的候选原因。",
+    name="diagnose_pss_interlock_interrupt",
+    description=(
+        "诊断 PSS 是否从 interlocked 进入 unlocked，并回溯门、急停、剂量、"
+        "卡盒、PLC/IO 等联锁中断原因。sysStatus_Eunlocked 只作为辅助状态。"
+    ),
     parameters={
         "type": "object",
         "properties": {
@@ -324,7 +384,10 @@ def diagnose_topoff_decay(
             "prefix": {"type": "string"},
             "seconds_before": {"type": "integer"},
             "seconds_after": {"type": "integer"},
-            "use_demo_data": {"type": "boolean"},
+            "use_remote_db": {"type": "boolean"},
+            "use_current_fake_data": {"type": "boolean"},
+            "fake_seed": {"type": "string"},
+            "fake_scenario_id": {"type": "string"},
         },
         "required": [],
     },
@@ -332,7 +395,7 @@ def diagnose_topoff_decay(
     read_only=True,
     expose_to_agent=False,
 )
-def diagnose_pss_emergency_unlock(
+def diagnose_pss_interlock_interrupt(
     event: dict | None = None,
     context_events: list[dict] | None = None,
     start: str | None = None,
@@ -340,10 +403,14 @@ def diagnose_pss_emergency_unlock(
     prefix: str | None = None,
     seconds_before: int | None = None,
     seconds_after: int | None = None,
-    use_demo_data: bool = False,
+    use_remote_db: bool | None = None,
+    use_current_fake_data: bool | None = None,
+    fake_seed: int | str | None = None,
+    fake_scenario_id: str | None = None,
 ) -> ToolResult:
-    _repo, settings = _runtime_repo_and_settings()
-    return _diagnose_pss_emergency_unlock_with(
+    repo, settings = _runtime_repo_and_settings()
+    return _diagnose_pss_interlock_interrupt_with(
+        repo,
         settings=settings,
         event=event,
         context_events=context_events,
@@ -352,7 +419,10 @@ def diagnose_pss_emergency_unlock(
         prefix=prefix,
         seconds_before=seconds_before,
         seconds_after=seconds_after,
-        use_demo_data=use_demo_data,
+        use_remote_db=use_remote_db,
+        use_current_fake_data=use_current_fake_data,
+        fake_seed=fake_seed,
+        fake_scenario_id=fake_scenario_id,
     )
 
 

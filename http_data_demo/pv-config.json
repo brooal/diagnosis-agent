@@ -1,0 +1,26 @@
+{
+  "beam": [
+    "RNG:BEAM:CURR"
+  ],
+  "power": [
+    "SR_PS_BM:current:ai",
+    "SR_PS_QM23:current:ai",
+    "SR_PS_QM24:current:ai",
+    "TL_PS_Q01:current:ai"
+  ],
+  "decay13": [
+    "RNG:OPERATION:MODE:bo",
+    "RNG:TOPOFF:ALARM:ENABLE",
+    "RNG:TOPOFF:DM:Neutron:Err:mbbo",
+    "RNG:TOPOFF:DM:Gamma:Err:mbbo",
+    "RNG:TOPOFF:IE:Err:mbbo",
+    "RNG:TOPOFF:RI:Err:mbbo",
+    "RNG:TOPOFF:MPS:Err:mbbo",
+    "RNG:TOPOFF:TPS:Err:mbbo",
+    "RNG:TOPOFF:BEAM:Err:mbbo",
+    "RNG:TOPOFF:KLY:Err:mbbo",
+    "RNG:BTemp:alarm:bi",
+    "RNG:STemp:alarm:bi",
+    "RNG:QTemp:alarm:bi"
+  ]
+}

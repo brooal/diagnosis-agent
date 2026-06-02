@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy.orm import Session
 
 from app.rag.models import RagDocumentRecord
+from app.utils.times import now_shanghai
 
 
 def new_document_uid() -> str:
@@ -92,7 +92,7 @@ class RagDocumentRepository:
         row = self._require(document_uid)
         row.status = status
         row.error = error
-        row.updated_at = datetime.utcnow()
+        row.updated_at = now_shanghai()
         self.db.commit()
         self.db.refresh(row)
         return row
@@ -119,7 +119,7 @@ class RagDocumentRepository:
         row.parser_version = parser_version
         row.chunker_version = chunker_version
         row.error = None
-        row.updated_at = datetime.utcnow()
+        row.updated_at = now_shanghai()
         self.db.commit()
         self.db.refresh(row)
         return row

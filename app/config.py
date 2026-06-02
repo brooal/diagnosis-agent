@@ -111,6 +111,7 @@ class Settings:
     decay_near_zero_ratio: float
     decay_absolute_low_threshold: float
     pss_pv_prefix: str
+    pss_use_remote_db: bool
     pss_event_lookback_seconds: int
     pss_event_lookahead_seconds: int
 
@@ -154,6 +155,8 @@ def _build_diag_database_url() -> str:
         if not value
     ]
     if missing:
+        if (_get_env("ARCHIVE_DATA_BACKEND", default="sql") or "sql").lower() in {"http", "hlsts"}:
+            return ""
         raise ValueError(f"Missing remote DB config: {', '.join(missing)}")
 
     return f"{driver}://{user}:{password}@{host}:{port}/{name}"
@@ -311,9 +314,10 @@ def get_settings() -> Settings:
         decay_abnormal_duration_seconds=_get_int("DECAY_ABNORMAL_DURATION_SECONDS", 10),
         decay_near_zero_ratio=_get_float("DECAY_NEAR_ZERO_RATIO", 0.15),
         decay_absolute_low_threshold=_get_float("DECAY_ABSOLUTE_LOW_THRESHOLD", 100.0),
-        pss_pv_prefix=os.getenv("PSS_PV_PREFIX", "HALF-BTP:PSS:"),
-        pss_event_lookback_seconds=_get_int("PSS_EVENT_LOOKBACK_SECONDS", 120),
-        pss_event_lookahead_seconds=_get_int("PSS_EVENT_LOOKAHEAD_SECONDS", 30),
+        pss_pv_prefix=os.getenv("PSS_PV_PREFIX", "HALF-TP:PSS:"),
+        pss_use_remote_db=_get_bool("PSS_USE_REMOTE_DB", False),
+        pss_event_lookback_seconds=_get_int("PSS_EVENT_LOOKBACK_SECONDS", 5),
+        pss_event_lookahead_seconds=_get_int("PSS_EVENT_LOOKAHEAD_SECONDS", 2),
 
         openai_api_key=_get_env("OPENAI_API_KEY", "DEEPSEEK_API_KEY"),
         openai_base_url=_get_env("OPENAI_BASE_URL", "DEEPSEEK_BASE_URL"),

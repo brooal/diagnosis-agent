@@ -8,3 +8,5 @@ __pycache__/
 diagnosis_agent.db
 *.db
 docker-data/
+experiments/
+tests/test_pss_ablation.py

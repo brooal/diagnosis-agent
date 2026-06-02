@@ -5,9 +5,9 @@ from typing import Any
 from app.skills.common import SkillContext, SkillResult
 
 
-class PssEmergencyUnlockDiagnosisSkill:
+class PssInterlockInterruptDiagnosisSkill:
     def run(self, context: SkillContext, arguments: dict[str, Any]) -> SkillResult:
-        result = context.tools.call("diagnose_pss_emergency_unlock", arguments)
+        result = context.tools.call("diagnose_pss_interlock_interrupt", arguments)
         if not result.ok:
             return SkillResult(
                 ok=False,
@@ -21,13 +21,14 @@ class PssEmergencyUnlockDiagnosisSkill:
         output = result.output if isinstance(result.output, dict) else {}
         evidence = [
             {
-                "type": "pss_emergency_unlock_diagnosis",
+                "type": "pss_interlock_interrupt_diagnosis",
                 "event_found": output.get("event_found"),
                 "event_time": output.get("event_time"),
-                "trigger": output.get("trigger"),
+                "state_transition": output.get("trigger"),
                 "primary_cause": output.get("primary_cause"),
                 "candidates": output.get("candidates", []),
-                "companion_events": output.get("companion_events", []),
+                "auxiliary_events": output.get("companion_events", []),
+                "events": output.get("events", []),
             }
         ]
         candidate_causes = []
@@ -53,12 +54,13 @@ class PssEmergencyUnlockDiagnosisSkill:
             candidate_causes=candidate_causes,
             output={
                 "event_found": output.get("event_found", False),
-                "event_type": output.get("event_type", "pss_emergency_unlock"),
+                "event_type": output.get("event_type", "pss_interlock_to_unlock"),
                 "event_time": output.get("event_time"),
                 "primary_cause": primary,
                 "candidates": output.get("candidates", []),
-                "companion_events": output.get("companion_events", []),
-                "tool": "diagnose_pss_emergency_unlock",
+                "auxiliary_events": output.get("companion_events", []),
+                "events": output.get("events", []),
+                "tool": "diagnose_pss_interlock_interrupt",
                 "tool_arguments": arguments,
                 "tool_output": output,
             },

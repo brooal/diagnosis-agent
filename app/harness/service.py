@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy.orm import Session
@@ -17,6 +16,8 @@ from app.harness.models import (
     DiagnosisSkillCall,
     DiagnosisTraceEvent,
 )
+from app.utils.json import make_json_safe
+from app.utils.times import now_shanghai
 
 
 def new_uid(prefix: str) -> str:
@@ -27,6 +28,13 @@ class HarnessService:
     def __init__(self, db: Session):
         self.db = db
 
+    def _commit(self) -> None:
+        try:
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
+
     def create_thread(self, title: str | None = None) -> str:
         thread_uid = new_uid("thread")
         row = HarnessThread(
@@ -35,7 +43,7 @@ class HarnessService:
             status="active",
         )
         self.db.add(row)
-        self.db.commit()
+        self._commit()
         return thread_uid
 
     def create_turn(
@@ -52,7 +60,10 @@ class HarnessService:
             content=content,
         )
         self.db.add(row)
-        self.db.commit()
+        thread = self.db.query(HarnessThread).filter_by(thread_uid=thread_uid).one_or_none()
+        if thread is not None:
+            thread.updated_at = now_shanghai()
+        self._commit()
         return turn_uid
 
     def get_recent_turns(
@@ -92,11 +103,11 @@ class HarnessService:
             trigger_source=trigger_source,
             intent=intent,
             status="running",
-            time_window=time_window,
-            scope=scope,
+            time_window=make_json_safe(time_window),
+            scope=make_json_safe(scope),
         )
         self.db.add(row)
-        self.db.commit()
+        self._commit()
         return case_uid
 
     def create_run(
@@ -121,7 +132,7 @@ class HarnessService:
         case = self.db.query(DiagnosisCase).filter_by(case_uid=case_uid).one()
         case.run_uid = run_uid
 
-        self.db.commit()
+        self._commit()
         return run_uid
 
     def add_item(
@@ -137,11 +148,11 @@ class HarnessService:
             run_uid=run_uid,
             case_uid=case_uid,
             item_type=item_type,
-            content=content,
+            content=make_json_safe(content),
             seq=seq,
         )
         self.db.add(row)
-        self.db.commit()
+        self._commit()
 
     def add_trace_event(
         self,
@@ -157,10 +168,10 @@ class HarnessService:
             case_uid=case_uid,
             seq=seq,
             event_type=event_type,
-            payload=payload,
+            payload=make_json_safe(payload),
         )
         self.db.add(row)
-        self.db.commit()
+        self._commit()
 
     def add_tool_call(
         self,
@@ -180,14 +191,14 @@ class HarnessService:
             case_uid=case_uid,
             step=step,
             tool_name=tool_name,
-            arguments=arguments,
+            arguments=make_json_safe(arguments),
             ok=ok,
             output_summary=output_summary,
             error=error,
             reason=reason,
         )
         self.db.add(row)
-        self.db.commit()
+        self._commit()
 
     def add_skill_call(
         self,
@@ -209,16 +220,16 @@ class HarnessService:
             case_uid=case_uid,
             step=step,
             skill_name=skill_name,
-            arguments=arguments,
+            arguments=make_json_safe(arguments),
             ok=ok,
             summary=summary,
-            evidence=evidence,
-            candidate_causes=candidate_causes,
+            evidence=make_json_safe(evidence),
+            candidate_causes=make_json_safe(candidate_causes),
             error=error,
             reason=reason,
         )
         self.db.add(row)
-        self.db.commit()
+        self._commit()
 
     def complete_run(
         self,
@@ -228,7 +239,7 @@ class HarnessService:
         final_answer: str,
         candidate_causes: list,
     ) -> None:
-        now = datetime.utcnow()
+        now = now_shanghai()
 
         run = self.db.query(HarnessRun).filter_by(run_uid=run_uid).one()
         run.status = "completed"
@@ -238,10 +249,10 @@ class HarnessService:
         case = self.db.query(DiagnosisCase).filter_by(case_uid=case_uid).one()
         case.status = "completed"
         case.final_answer = final_answer
-        case.candidate_causes = candidate_causes
+        case.candidate_causes = make_json_safe(candidate_causes)
         case.updated_at = now
 
-        self.db.commit()
+        self._commit()
 
     def fail_run(
         self,
@@ -250,7 +261,7 @@ class HarnessService:
         case_uid: str,
         error: str,
     ) -> None:
-        now = datetime.utcnow()
+        now = now_shanghai()
 
         run = self.db.query(HarnessRun).filter_by(run_uid=run_uid).one()
         run.status = "failed"
@@ -262,4 +273,4 @@ class HarnessService:
         case.final_answer = error
         case.updated_at = now
 
-        self.db.commit()
+        self._commit()

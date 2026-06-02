@@ -71,6 +71,55 @@ class PVRepository:
             for row in rows
         ]
 
+    def fetch_sample_channel_samples(
+        self,
+        channel_id: int,
+        start_time: str,
+        end_time: str,
+        limit: int | None = None,
+    ) -> list[PVSample]:
+        s = self.settings
+        max_points = limit or s.diag_db_max_query_points
+
+        sql = text(
+            f"""
+            SELECT
+                c.{s.archive_channel_name_col} AS channel_name,
+                {self._iso_time_sql("s." + s.archive_sample_time_col)} AS smpl_time,
+                s.{s.archive_sample_nanosecs_col} AS nanosecs,
+                s.{s.archive_sample_float_col} AS float_val
+            FROM {s.archive_sample_table} AS s
+            LEFT JOIN {s.archive_channel_table} AS c
+              ON s.{s.archive_sample_channel_id_col} = c.{s.archive_channel_id_col}
+            WHERE s.{s.archive_sample_channel_id_col} = :channel_id
+              AND s.{s.archive_sample_time_col} >= CAST(:start_time AS timestamptz)
+              AND s.{s.archive_sample_time_col} <= CAST(:end_time AS timestamptz)
+            ORDER BY s.{s.archive_sample_time_col}, s.{s.archive_sample_nanosecs_col}
+            LIMIT :limit
+            """
+        )
+
+        with self.db.connect() as conn:
+            rows = conn.execute(
+                sql,
+                {
+                    "channel_id": channel_id,
+                    "start_time": start_time,
+                    "end_time": end_time,
+                    "limit": max_points,
+                },
+            ).mappings().all()
+
+        return [
+            PVSample(
+                channel_name=row["channel_name"] or str(channel_id),
+                smpl_time=row["smpl_time"],
+                nanosecs=int(row["nanosecs"]),
+                float_val=float(row["float_val"]),
+            )
+            for row in rows
+        ]
+
     def fetch_pattern_samples(
         self,
         pattern: str,
@@ -162,6 +211,54 @@ class PVRepository:
                 sql,
                 {
                     "channel_ids": channel_ids,
+                    "start_time": start_time,
+                    "end_time": end_time,
+                    "limit": max_points,
+                },
+            ).mappings().all()
+
+        return [_raw_sample_from_row(row) for row in rows]
+
+    def fetch_raw_pv_samples(
+        self,
+        pv_names: list[str],
+        start_time: str,
+        end_time: str,
+        limit: int | None = None,
+    ) -> list[PVRawSample]:
+        if not pv_names:
+            return []
+
+        s = self.settings
+        max_points = limit or s.diag_db_max_query_points
+        sql = text(
+            f"""
+            SELECT
+                s.{s.archive_sample_raw_channel_id_col} AS channel_id,
+                c.{s.archive_channel_name_col} AS channel_name,
+                {self._iso_time_sql("s." + s.archive_sample_raw_time_col)} AS smpl_time,
+                s.{s.archive_sample_raw_nanosecs_col} AS nanosecs,
+                s.{s.archive_sample_raw_num_val_col} AS num_val,
+                s.{s.archive_sample_raw_severity_id_col} AS severity_id,
+                s.{s.archive_sample_raw_status_id_col} AS status_id
+            FROM {s.archive_sample_raw_table} AS s
+            JOIN {s.archive_channel_table} AS c
+              ON s.{s.archive_sample_raw_channel_id_col} = c.{s.archive_channel_id_col}
+            WHERE c.{s.archive_channel_name_col} IN :pv_names
+              AND s.{s.archive_sample_raw_time_col} >= CAST(:start_time AS timestamptz)
+              AND s.{s.archive_sample_raw_time_col} <= CAST(:end_time AS timestamptz)
+            ORDER BY c.{s.archive_channel_name_col},
+                     s.{s.archive_sample_raw_time_col},
+                     s.{s.archive_sample_raw_nanosecs_col}
+            LIMIT :limit
+            """
+        ).bindparams(bindparam("pv_names", expanding=True))
+
+        with self.db.connect() as conn:
+            rows = conn.execute(
+                sql,
+                {
+                    "pv_names": pv_names,
                     "start_time": start_time,
                     "end_time": end_time,
                     "limit": max_points,

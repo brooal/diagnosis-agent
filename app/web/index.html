@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Diagnosis Agent Workbench</title>
+    <link rel="stylesheet" href="/styles.css?v=pss-rag-20260601-1" />
+  </head>
+  <body>
+    <div id="appShell" class="app-shell auto-mode">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">DA</div>
+          <div>
+            <h1>Diagnosis Agent</h1>
+            <p>故障诊断工作台</p>
+          </div>
+        </div>
+
+        <div class="sidebar-actions">
+          <button id="newChatButton" class="primary-action" type="button">新建对话</button>
+          <button id="refreshThreadsButton" class="icon-action" type="button" title="刷新历史">↻</button>
+        </div>
+
+        <div class="history-header">
+          <span>历史对话</span>
+          <span id="threadCount" class="count-pill">0</span>
+        </div>
+        <div id="threadList" class="thread-list" aria-live="polite"></div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Accelerator Fault Diagnosis</p>
+            <h2 id="workspaceTitle">自动诊断</h2>
+          </div>
+          <div class="mode-tabs" role="tablist" aria-label="工作模式">
+            <button id="chatTab" class="mode-tab" type="button">对话诊断</button>
+            <button id="autoTab" class="mode-tab active" type="button">自动诊断</button>
+          </div>
+        </header>
+
+        <section id="chatPanel" class="panel-grid">
+          <section class="chat-card">
+            <div id="chatMessages" class="messages"></div>
+            <form id="chatForm" class="composer">
+              <textarea
+                id="chatInput"
+                rows="3"
+                placeholder="例如：诊断2026-05-21 10:00:00到10:10:00的PSS安全联锁状态"
+              ></textarea>
+              <div class="composer-row">
+                <label class="toggle-line">
+                  <input id="chatRagToggle" type="checkbox" />
+                  <span>启用 RAG</span>
+                </label>
+                <button id="sendChatButton" class="send-button" type="submit">发送诊断</button>
+              </div>
+            </form>
+          </section>
+        </section>
+
+        <section id="autoPanel" class="auto-layout active">
+          <section class="auto-workbench">
+            <header class="auto-workbench-header">
+              <div>
+                <p class="eyebrow">Beam Auto Diagnosis</p>
+                <h2>自动束流诊断</h2>
+              </div>
+              <span id="autoSchedulerStatus" class="status-chip neutral">未加载</span>
+            </header>
+
+            <div class="auto-three-column">
+              <section class="report-sidebar" aria-label="历史诊断报告">
+                <div class="section-heading">
+                  <div>
+                    <p class="eyebrow">Reports</p>
+                    <h3>历史诊断报告</h3>
+                  </div>
+                  <button id="refreshAutoReportsButton" class="small-button" type="button">刷新</button>
+                </div>
+                <div id="autoReportList" class="report-tree">
+                  <div class="detail-empty">只有出现故障并生成报告后才会显示在这里。</div>
+                </div>
+              </section>
+
+              <section class="auto-center-column" aria-label="自动束流诊断">
+                <section class="auto-section auto-run-section">
+                  <div class="section-heading">
+                    <div>
+                      <p class="eyebrow">Scheduler</p>
+                      <h3>自动束流诊断</h3>
+                    </div>
+                    <button id="toggleAutoSchedulerButton" class="send-button" type="button">启动自动诊断</button>
+                  </div>
+                  <div class="monitor-meta" id="autoSchedulerMeta">正在读取自动诊断任务状态...</div>
+                  <form id="autoProbeForm" class="auto-probe-form">
+                    <label class="toggle-line">
+                      <input id="autoProbeLlmToggle" type="checkbox" />
+                      <span>使用 LLM 总结</span>
+                    </label>
+                    <label>
+                      <span>测试邮件</span>
+                      <input id="autoProbeEmail" type="email" placeholder="填写后会发送本次自动诊断测试结果" />
+                    </label>
+                    <button id="runAutoProbeButton" class="send-button" type="submit">运行一次测试</button>
+                  </form>
+                  <div id="autoProbeResult" class="auto-probe-result">
+                    <div class="detail-empty">可先关闭 LLM 总结，直接测试故障信息、束流信息和邮件链路。</div>
+                  </div>
+                  <div class="progress-divider"></div>
+                  <div class="section-heading compact-heading">
+                    <div>
+                      <p class="eyebrow">Progress</p>
+                      <h3>当前诊断进度</h3>
+                    </div>
+                  </div>
+                  <div id="autoProgressPanel" class="progress-panel">
+                    <div class="detail-empty">启动自动诊断后，这里会显示当前运行阶段。</div>
+                  </div>
+                </section>
+
+              </section>
+
+              <section class="manual-workspace" aria-label="手动束流诊断">
+                <div class="section-heading">
+                  <div>
+                    <p class="eyebrow">Manual Diagnosis</p>
+                    <h3>手动束流诊断</h3>
+                  </div>
+                  <span id="manualStatus" class="status-chip neutral">待执行</span>
+                </div>
+                <form id="manualBeamForm" class="auto-form">
+                  <div class="form-grid">
+                    <label>
+                      <span>开始时间</span>
+                      <input id="manualBeamStart" type="text" value="2026-05-24T22:00:00+08:00" />
+                    </label>
+                    <label>
+                      <span>结束时间</span>
+                      <input id="manualBeamEnd" type="text" value="2026-05-24T23:00:00+08:00" />
+                    </label>
+                  </div>
+                  <button id="runManualBeamButton" class="send-button" type="submit">运行手动诊断</button>
+                </form>
+                <div id="manualBeamResult" class="manual-result">
+                  <div class="detail-empty">输入时间范围后，将直接对整个范围做一次束流诊断。</div>
+                </div>
+                <div id="manualBeamChart" class="beam-chart">
+                  <div class="detail-empty">手动诊断完成后会显示该时间范围内的束流曲线。</div>
+                </div>
+              </section>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <aside id="processDrawer" class="process-drawer" aria-hidden="true">
+      <div class="drawer-header">
+        <div>
+          <p class="eyebrow">Diagnosis Process</p>
+          <h3 id="drawerTitle">诊断过程</h3>
+        </div>
+        <div class="drawer-actions">
+          <span id="runStatus" class="status-chip neutral">未选择</span>
+          <button id="closeDrawerButton" class="small-button" type="button">收回</button>
+        </div>
+      </div>
+      <div id="runDetail" class="drawer-body">
+        <div class="detail-empty">点击某次诊断运行后查看过程。</div>
+      </div>
+    </aside>
+    <div id="autoReportModal" class="modal-layer" hidden>
+      <section class="report-modal" role="dialog" aria-modal="true" aria-labelledby="autoReportInlineTitle">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow">Beam Report</p>
+            <h3 id="autoReportInlineTitle">选中报告</h3>
+          </div>
+          <div class="drawer-actions">
+            <span id="autoReportInlineStatus" class="status-chip neutral">未选择</span>
+            <button id="closeAutoReportModalButton" class="small-button" type="button">关闭</button>
+          </div>
+        </div>
+        <div class="report-modal-body">
+          <div id="autoReportInlineDetail" class="selected-report-detail">
+            <div class="detail-empty">从左侧历史报告中选择一条记录后，这里会展示报告摘要、诊断结论和候选原因。</div>
+          </div>
+          <div id="autoBeamChart" class="beam-chart">
+            <div class="detail-empty">选择报告后，会实时获取该报告时间范围内的束流曲线。</div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <script src="/app.js?v=pss-rag-20260601-1"></script>
+  </body>
+</html>

@@ -15,6 +15,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import JSON
 
 from app.db.session import Base
+from app.utils.times import now_shanghai
 
 
 class HarnessThread(Base):
@@ -26,8 +27,8 @@ class HarnessThread(Base):
     title: Mapped[str | None] = mapped_column(String(255), nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="active")
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_shanghai)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=now_shanghai)
 
 
 class HarnessTurn(Base):
@@ -40,7 +41,7 @@ class HarnessTurn(Base):
     role: Mapped[str] = mapped_column(String(32))  # user / system / auto
     content: Mapped[str] = mapped_column(Text)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_shanghai)
 
 
 class HarnessRun(Base):
@@ -56,7 +57,7 @@ class HarnessRun(Base):
     status: Mapped[str] = mapped_column(String(32), default="running")
     trigger_source: Mapped[str] = mapped_column(String(32))
 
-    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=now_shanghai)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     final_answer: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -76,7 +77,7 @@ class HarnessItem(Base):
     content: Mapped[dict] = mapped_column(JSON)
     seq: Mapped[int] = mapped_column(Integer)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_shanghai)
 
 
 class DiagnosisCase(Base):
@@ -99,8 +100,8 @@ class DiagnosisCase(Base):
     final_answer: Mapped[str | None] = mapped_column(Text, nullable=True)
     candidate_causes: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_shanghai)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=now_shanghai)
 
 
 class DiagnosisToolCall(Base):
@@ -121,7 +122,7 @@ class DiagnosisToolCall(Base):
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_shanghai)
 
 
 class DiagnosisSkillCall(Base):
@@ -143,7 +144,7 @@ class DiagnosisSkillCall(Base):
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_shanghai)
 
 
 class DiagnosisTraceEvent(Base):
@@ -158,4 +159,4 @@ class DiagnosisTraceEvent(Base):
     event_type: Mapped[str] = mapped_column(String(64))
     payload: Mapped[dict] = mapped_column(JSON)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_shanghai)
