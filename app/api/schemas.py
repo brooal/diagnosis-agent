@@ -51,6 +51,7 @@ class AgentChatResponse(BaseModel):
     observations: list[dict[str, Any]] = Field(default_factory=list)
     evidence: list[dict[str, Any]] = Field(default_factory=list)
     candidate_causes: list[dict[str, Any]] = Field(default_factory=list)
+    llm_usage: dict[str, Any] | None = None
 
 
 class HealthResponse(BaseModel):
@@ -92,6 +93,7 @@ class RunSummary(BaseModel):
     started_at: str | None = None
     finished_at: str | None = None
     final_answer: str | None = None
+    llm_usage: dict[str, Any] | None = None
 
 
 class ThreadDetail(BaseModel):

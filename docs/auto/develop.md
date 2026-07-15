@@ -107,7 +107,7 @@ is_operation_day(input_date)
 | `AUTO_BEAM_NORMAL_MAX` | `501` | 束流正常范围上限 |
 | `AUTO_BEAM_DECAY_MIN` | `490` | 束流轻微偏离/decay 参考范围下限 |
 | `AUTO_BEAM_DECAY_MAX` | `503` | 束流轻微偏离/decay 参考范围上限 |
-| `AUTO_BEAM_DROP_RATIO_THRESHOLD` | `0.75` | 当前窗口内快速掉束的相对下降阈值 |
+| `AUTO_BEAM_DROP_STEP_RATIO_THRESHOLD` | `0.70` | 相邻采样点比例阈值；当前值降至前值的 70% 或以下时判为快速掉束 |
 | `AUTO_BEAM_ABSOLUTE_LOW_THRESHOLD` | `100` | 判定低流强/掉束的绝对阈值 |
 | `AUTO_EMAIL_ENABLED` | `false` | 是否启用邮件发送 |
 | `AUTO_EMAIL_DRY_RUN` | `true` | 是否只记录不发送 |
@@ -160,7 +160,7 @@ is_operation_day(input_date)
 
 1. 如果报警 PV 中存在 `RNG:TOPOFF:BEAM:Err:mbbo=1/2`，判为 `drop`。
 2. 如果束流 sample 出现低于 `AUTO_BEAM_ABSOLUTE_LOW_THRESHOLD` 的点，判为 `drop`。
-3. 如果窗口内束流从正常/接近正常快速下降，且相对下降超过 `AUTO_BEAM_DROP_RATIO_THRESHOLD`，判为 `drop`。
+3. 如果相邻采样点满足 `current / previous <= AUTO_BEAM_DROP_STEP_RATIO_THRESHOLD`，判为 `drop`；默认规则下 `500 -> 350` 即触发。
 4. 如果窗口内出现 MODE=0，但没有低流强报警和明显低流强，判为 `decay`。
 5. 如果窗口内存在其他非正常报警 PV，判为 `decay`。
 6. 如果束流 sample 大部分不在 `495~501` 正常范围内，判为 `decay`。
@@ -743,20 +743,24 @@ ARCHIVE_HTTP_CHANNEL_ID_MAP={"617":"RNG:BEAM:CURR"}
 
 连续同一故障：
 
-1. 使用 `incident_key` 找到 active incident；
+1. 使用 `incident_key` 或最近 active incident 找到尚未恢复的事件；
 2. 更新 `last_seen_at`；
-3. 更新主候选原因、候选原因、证据；
+3. 保留首次窗口确定的分类、严重程度、主原因和候选原因，后续窗口不升级或改写原因；
 4. 清零 `normal_window_count`；
 5. 不重复创建新事件。
 
 恢复判断：
 
-1. 如果本轮窗口没有故障，给最近 active incident 的 `normal_window_count + 1`；
-2. 当连续正常窗口数达到 `AUTO_INCIDENT_RECOVERY_CONFIRM_WINDOWS`；
-3. 将 incident 状态改为 `closed`；
-4. 写入 `recovered_at`。
+1. 当前窗口必须查询到束流样本；
+2. 束流中位数必须处于 `495~501 mA`；
+3. 至少 80% 的束流采样点必须处于 `495~501 mA`；
+4. MODE 当前有效值必须为 1，且窗口内不能出现 MODE=0；
+5. `RNG:TOPOFF:BEAM:Err:mbbo` 不能处于活跃状态；
+6. 满足以上全部条件时，最近 active incident 的 `normal_window_count + 1`；
+7. 连续达到 `AUTO_INCIDENT_RECOVERY_CONFIRM_WINDOWS` 后，将 incident 改为 `closed` 并写入 `recovered_at`。
 
 默认配置下，连续 3 个 30 秒窗口正常后，认为故障恢复。
+取数失败、无束流样本以及非 Operation 时段均不累计恢复窗口。
 
 ### 第三层：通知记录
 

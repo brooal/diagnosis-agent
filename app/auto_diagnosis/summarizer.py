@@ -1,10 +1,18 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
+from typing import Any
 
 from app.auto_diagnosis.schemas import BeamFaultEvent
 from app.llm.client import LLMClient
 from app.utils.json import make_json_safe
+
+
+@dataclass(frozen=True)
+class SummaryResult:
+    text: str
+    token_usage: dict[str, Any] | None = None
 
 
 class BeamAutoSummarizer:
@@ -19,8 +27,24 @@ class BeamAutoSummarizer:
         schedule: dict,
         detect_window: dict,
     ) -> str:
+        return self.summarize_new_incident_with_usage(
+            event=event,
+            schedule=schedule,
+            detect_window=detect_window,
+        ).text
+
+    def summarize_new_incident_with_usage(
+        self,
+        *,
+        event: BeamFaultEvent,
+        schedule: dict,
+        detect_window: dict,
+    ) -> SummaryResult:
         if not self.enable_llm:
-            return fallback_summary(event=event, schedule=schedule, detect_window=detect_window)
+            return SummaryResult(
+                text=fallback_summary(event=event, schedule=schedule, detect_window=detect_window),
+                token_usage=None,
+            )
 
         messages = [
             {
@@ -47,9 +71,13 @@ class BeamAutoSummarizer:
             },
         ]
         try:
-            return self.llm.complete(messages, temperature=0.2)
+            completion = self.llm.complete_with_usage(messages, temperature=0.2)
+            return SummaryResult(text=completion.content, token_usage=completion.usage)
         except Exception:
-            return fallback_summary(event=event, schedule=schedule, detect_window=detect_window)
+            return SummaryResult(
+                text=fallback_summary(event=event, schedule=schedule, detect_window=detect_window),
+                token_usage=None,
+            )
 
     def summarize_manual_diagnosis(
         self,
@@ -57,8 +85,19 @@ class BeamAutoSummarizer:
         diagnosis: dict,
         fallback: str,
     ) -> str:
+        return self.summarize_manual_diagnosis_with_usage(
+            diagnosis=diagnosis,
+            fallback=fallback,
+        ).text
+
+    def summarize_manual_diagnosis_with_usage(
+        self,
+        *,
+        diagnosis: dict,
+        fallback: str,
+    ) -> SummaryResult:
         if not self.enable_llm:
-            return fallback
+            return SummaryResult(text=fallback, token_usage=None)
 
         compact = _compact_manual_payload(diagnosis)
         messages = [
@@ -87,9 +126,10 @@ class BeamAutoSummarizer:
             },
         ]
         try:
-            return self.llm.complete(messages, temperature=0.2)
+            completion = self.llm.complete_with_usage(messages, temperature=0.2)
+            return SummaryResult(text=completion.content, token_usage=completion.usage)
         except Exception:
-            return fallback
+            return SummaryResult(text=fallback, token_usage=None)
 
 
 def fallback_summary(

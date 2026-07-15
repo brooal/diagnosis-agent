@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AcceleratorFaultClassifierInput",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "user_query": {
+      "type": "string"
+    },
+    "scope": {
+      "type": "object"
+    },
+    "start": {
+      "type": "string"
+    },
+    "end": {
+      "type": "string"
+    },
+    "beam_samples": {
+      "type": "array"
+    },
+    "mode_samples": {
+      "type": "array"
+    },
+    "alarm_samples": {
+      "type": "array"
+    },
+    "power_samples": {
+      "type": "array"
+    },
+    "pss_samples": {
+      "type": "array"
+    }
+  }
+}

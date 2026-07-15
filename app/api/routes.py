@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import os
+import re
 import statistics
 from dataclasses import replace
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, HTTPException, Query
 from starlette.concurrency import run_in_threadpool
 
 from app.archive_repository.factory import build_archive_repository
+from app.archive_http.errors import ArchiveHttpAuthError, ArchiveHttpDataError, ArchiveHttpError
 from app.agent.runner import DiagnosisAgentRunner
 from app.api.schemas import (
     AgentAutoRequest,
@@ -192,10 +195,37 @@ def get_beam_series(
     try:
         repo, backend = _build_auto_beam_repository()
         return _fetch_beam_series(start=start, end=end, limit=limit, repo=repo, backend=backend)
+    except ArchiveHttpAuthError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "archive_auth_failed",
+                "message": "归档历史数据系统登录失败，暂时无法读取束流曲线。请稍后重试，或检查 HTTP 数据源账号、密码和 CAS 服务状态。",
+            },
+        ) from exc
+    except ArchiveHttpDataError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "code": "archive_data_error",
+                "message": "归档历史数据返回格式异常，暂时无法读取束流曲线。",
+            },
+        ) from exc
+    except ArchiveHttpError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "code": "archive_http_error",
+                "message": "归档历史数据接口请求失败，暂时无法读取束流曲线。",
+            },
+        ) from exc
     except Exception as exc:
         raise HTTPException(
             status_code=500,
-            detail=f"{type(exc).__name__}: {exc}",
+            detail={
+                "code": "beam_series_failed",
+                "message": "束流曲线读取失败，请稍后重试。",
+            },
         ) from exc
 
 
@@ -254,12 +284,23 @@ def get_beam_auto_report(incident_uid: str) -> dict:
 
 
 @router.get("/threads", response_model=list[ThreadSummary])
-def list_threads(limit: int = Query(default=30, ge=1, le=200)) -> list[ThreadSummary]:
+def list_threads(
+    limit: int = Query(default=30, ge=1, le=200),
+    include_experiments: bool = Query(default=False),
+) -> list[ThreadSummary]:
     init_db()
     db = SessionLocal()
     try:
-        rows = db.query(HarnessThread).order_by(HarnessThread.updated_at.desc(), HarnessThread.id.desc()).limit(limit).all()
-        return [_build_thread_summary(db, row) for row in rows]
+        fetch_limit = limit if include_experiments else min(limit * 10, 1000)
+        rows = (
+            db.query(HarnessThread)
+            .order_by(HarnessThread.updated_at.desc(), HarnessThread.id.desc())
+            .limit(fetch_limit)
+            .all()
+        )
+        if not include_experiments:
+            rows = _exclude_experiment_threads(db, rows)
+        return [_build_thread_summary(db, row) for row in rows[:limit]]
     finally:
         db.close()
 
@@ -399,7 +440,7 @@ def get_run(run_uid: str) -> RunDetail:
             .all()
         )
         return RunDetail(
-            run=make_json_safe(_run_to_dict(run)),
+            run=make_json_safe(_run_to_dict(db, run)),
             case=make_json_safe(_case_to_dict(case)) if case else None,
             items=make_json_safe([_item_to_dict(row) for row in items]),
             tool_calls=make_json_safe([_tool_call_to_dict(row) for row in tool_calls]),
@@ -517,7 +558,7 @@ def _run_beam_auto_probe_sync(request: BeamAutoProbeRequest) -> dict:
     result = pipeline.run_window(start=start, end=end)
     series = _fetch_beam_series(start=start, end=end, limit=2000, repo=repo)
     event = result.events[0] if result.events else None
-    report = _build_auto_probe_report(
+    report, llm_usage = _build_auto_probe_report(
         event=event,
         result=result,
         schedule=schedule or {},
@@ -546,6 +587,7 @@ def _run_beam_auto_probe_sync(request: BeamAutoProbeRequest) -> dict:
                 "repository": type(repo).__name__,
             },
             "use_llm_summary": request.use_llm_summary,
+            "llm_usage": llm_usage,
             "summary": result.summary,
             "report": report,
             "fault_info": {
@@ -578,13 +620,14 @@ def _build_auto_probe_report(
     schedule: dict,
     detect_window: dict,
     use_llm_summary: bool,
-) -> str:
+) -> tuple[str, dict | None]:
     if event is not None:
-        return BeamAutoSummarizer(enable_llm=use_llm_summary).summarize_new_incident(
+        result = BeamAutoSummarizer(enable_llm=use_llm_summary).summarize_new_incident_with_usage(
             event=event,
             schedule=schedule,
             detect_window=detect_window,
         )
+        return result.text, result.token_usage
     return "\n".join(
         [
             "## 束流自动诊断测试",
@@ -592,7 +635,7 @@ def _build_auto_probe_report(
             f"- 诊断状态：{result.status}",
             f"- 摘要：{result.summary or '未发现明确异常。'}",
         ]
-    )
+    ), None
 
 
 def _send_auto_probe_email(
@@ -750,11 +793,20 @@ def _build_chat_response(state: dict) -> AgentChatResponse:
         observations=make_json_safe(list(state.get("observations") or [])),
         evidence=make_json_safe(list(state.get("evidence") or [])),
         candidate_causes=make_json_safe(list(state.get("candidate_causes") or [])),
+        llm_usage=make_json_safe(state.get("llm_usage")),
     )
 
 
 def _auto_incident_to_summary(row: AutoBeamIncident) -> dict:
     report_date = _date_part(row.first_seen_at) or _dt(row.created_at)
+    report_window = _incident_report_window(row)
+    fault_time = _incident_fault_time(row)
+    candidate_causes = row.candidate_causes or []
+    primary_cause = (
+        row.primary_cause
+        or (candidate_causes[0] if candidate_causes else None)
+        or _primary_cause_from_report_text(row.report or "")
+    )
     return {
         "incident_uid": row.incident_uid,
         "status": row.status,
@@ -763,9 +815,12 @@ def _auto_incident_to_summary(row: AutoBeamIncident) -> dict:
         "first_seen_at": row.first_seen_at,
         "last_seen_at": row.last_seen_at,
         "recovered_at": row.recovered_at,
-        "primary_cause": row.primary_cause,
+        "fault_time": fault_time,
+        "report_window": report_window,
+        "primary_cause": primary_cause,
         "report": row.report,
         "report_preview": (row.report or "")[:240],
+        "llm_usage": _incident_llm_usage(row),
         "created_at": _dt(row.created_at),
         "updated_at": _dt(row.updated_at),
         "report_date": report_date,
@@ -775,13 +830,103 @@ def _auto_incident_to_summary(row: AutoBeamIncident) -> dict:
 
 
 def _auto_incident_to_detail(row: AutoBeamIncident) -> dict:
+    summary = _auto_incident_to_summary(row)
+    candidate_causes = row.candidate_causes or []
+    if not candidate_causes and summary.get("primary_cause"):
+        candidate_causes = [summary["primary_cause"]]
     return {
-        **_auto_incident_to_summary(row),
+        **summary,
         "incident_key": row.incident_key,
         "normal_window_count": row.normal_window_count,
-        "candidate_causes": row.candidate_causes,
+        "candidate_causes": candidate_causes,
         "evidence": row.evidence,
+        "llm_usage": _incident_llm_usage(row),
         "last_report_sent_at": row.last_report_sent_at,
+    }
+
+
+def _incident_llm_usage(row: AutoBeamIncident) -> dict | None:
+    evidence = row.evidence if isinstance(row.evidence, dict) else {}
+    usage = evidence.get("llm_usage")
+    return usage if isinstance(usage, dict) else None
+
+
+def _primary_cause_from_report_text(text: str) -> dict | None:
+    if not text:
+        return None
+    pv_match = re.search(r"`?((?:RNG|SR|TL|LA):[A-Za-z0-9_:.-]+)`?", text)
+    if not pv_match:
+        return None
+    pv = pv_match.group(1)
+    meaning_match = re.search(r"(KLY\d+_Err|Injecting Efficiency Low|Low Current|[A-Za-z]+_[A-Za-z0-9_]+)", text)
+    description = _sentence_with(text, pv)
+    return {
+        "pv": pv,
+        "meaning": meaning_match.group(1) if meaning_match else None,
+        "description": description or "从报告正文提取的原因信息。",
+        "source": "report_text",
+    }
+
+
+def _sentence_with(text: str, needle: str) -> str | None:
+    compact = " ".join(str(text).split())
+    index = compact.find(needle)
+    if index < 0:
+        return None
+    start = max(compact.rfind("。", 0, index), compact.rfind("\n", 0, index), compact.rfind("- ", 0, index))
+    end_candidates = [value for value in [compact.find("。", index), compact.find("\n", index)] if value >= 0]
+    end = min(end_candidates) if end_candidates else min(len(compact), index + 120)
+    return compact[start + 1 : end + 1].strip(" -")
+
+
+def _incident_fault_time(row: AutoBeamIncident) -> str:
+    evidence = row.evidence if isinstance(row.evidence, dict) else {}
+    return str(evidence.get("fault_time") or row.first_seen_at)
+
+
+def _incident_report_window(row: AutoBeamIncident) -> dict | None:
+    evidence = row.evidence if isinstance(row.evidence, dict) else {}
+    for key in ("report_window", "initial_detect_window"):
+        window = evidence.get(key)
+        if isinstance(window, dict) and window.get("start") and window.get("end"):
+            return {"start": window["start"], "end": window["end"]}
+
+    parsed = _parse_report_window_from_text(row.report or "", row.first_seen_at)
+    if parsed:
+        return parsed
+
+    return _fallback_report_window(row.first_seen_at)
+
+
+def _parse_report_window_from_text(text: str, event_time: str | None) -> dict | None:
+    if not text or not event_time:
+        return None
+    day = _date_part(event_time)
+    if not day:
+        return None
+    pattern = re.compile(r"(\d{1,2}:\d{2}:\d{2})\s*(?:至|到|-)\s*(\d{1,2}:\d{2}:\d{2})")
+    match = pattern.search(text)
+    if not match:
+        return None
+    start_time, end_time = match.groups()
+    return {
+        "start": f"{day}T{start_time.zfill(8)}+08:00",
+        "end": f"{day}T{end_time.zfill(8)}+08:00",
+    }
+
+
+def _fallback_report_window(event_time: str | None) -> dict | None:
+    if not event_time:
+        return None
+    try:
+        event_dt = datetime.fromisoformat(str(event_time))
+    except Exception:
+        return None
+    start = event_dt - timedelta(seconds=15)
+    end = event_dt + timedelta(seconds=15)
+    return {
+        "start": start.isoformat(timespec="seconds"),
+        "end": end.isoformat(timespec="seconds"),
     }
 
 
@@ -846,6 +991,34 @@ def _build_thread_summary(db, row: HarnessThread) -> ThreadSummary:
     )
 
 
+def _exclude_experiment_threads(db, rows: list[HarnessThread]) -> list[HarnessThread]:
+    if not rows:
+        return []
+    thread_uids = [row.thread_uid for row in rows]
+    cases = (
+        db.query(DiagnosisCase.thread_uid, DiagnosisCase.scope)
+        .filter(DiagnosisCase.thread_uid.in_(thread_uids))
+        .all()
+    )
+    hidden_thread_uids = {
+        thread_uid
+        for thread_uid, scope in cases
+        if _is_experiment_scope(scope)
+    }
+    return [row for row in rows if row.thread_uid not in hidden_thread_uids]
+
+
+def _is_experiment_scope(scope: object) -> bool:
+    if not isinstance(scope, dict):
+        return False
+    return bool(
+        scope.get("ablation_case_id")
+        or scope.get("experiment")
+        or scope.get("is_experiment")
+        or scope.get("hide_from_chat_history")
+    )
+
+
 def _build_run_summary(db, row: HarnessRun) -> RunSummary:
     case = db.query(DiagnosisCase).filter_by(case_uid=row.case_uid).one_or_none()
     turn = db.query(HarnessTurn).filter_by(turn_uid=row.turn_uid).one_or_none()
@@ -863,10 +1036,11 @@ def _build_run_summary(db, row: HarnessRun) -> RunSummary:
         started_at=_dt(row.started_at),
         finished_at=_dt(row.finished_at),
         final_answer=row.final_answer,
+        llm_usage=_run_llm_usage(db, row.run_uid),
     )
 
 
-def _run_to_dict(row: HarnessRun) -> dict:
+def _run_to_dict(db, row: HarnessRun) -> dict:
     return {
         "run_uid": row.run_uid,
         "thread_uid": row.thread_uid,
@@ -877,7 +1051,28 @@ def _run_to_dict(row: HarnessRun) -> dict:
         "started_at": _dt(row.started_at),
         "finished_at": _dt(row.finished_at),
         "final_answer": row.final_answer,
+        "llm_usage": _run_llm_usage(db, row.run_uid),
     }
+
+
+def _run_llm_usage(db, run_uid: str) -> dict | None:
+    item = (
+        db.query(HarnessItem)
+        .filter_by(run_uid=run_uid, item_type="final_answer")
+        .order_by(HarnessItem.id.desc())
+        .first()
+    )
+    if item and isinstance(item.content, dict) and isinstance(item.content.get("llm_usage"), dict):
+        return item.content["llm_usage"]
+    trace = (
+        db.query(DiagnosisTraceEvent)
+        .filter_by(run_uid=run_uid, event_type="case_completed")
+        .order_by(DiagnosisTraceEvent.id.desc())
+        .first()
+    )
+    if trace and isinstance(trace.payload, dict) and isinstance(trace.payload.get("llm_usage"), dict):
+        return trace.payload["llm_usage"]
+    return None
 
 
 def _case_to_dict(row: DiagnosisCase) -> dict:

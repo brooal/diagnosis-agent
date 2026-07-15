@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import smtplib
+import time
 from email.message import EmailMessage
 
 from app.auto_diagnosis.config import AutoDiagnosisConfig
@@ -34,16 +35,30 @@ class AutoDiagnosisEmailer:
         message["To"] = ", ".join(recipients)
         message.set_content(body)
 
-        try:
-            use_ssl = self.config.smtp_use_ssl or self.config.smtp_port == 465
-            timeout = self.config.smtp_timeout_seconds
-            smtp_cls = smtplib.SMTP_SSL if use_ssl else smtplib.SMTP
-            with smtp_cls(self.config.smtp_host, self.config.smtp_port, timeout=timeout) as smtp:
-                if not use_ssl and self.config.smtp_starttls:
-                    smtp.starttls()
-                if self.config.smtp_username and self.config.smtp_password:
-                    smtp.login(self.config.smtp_username, self.config.smtp_password)
-                smtp.send_message(message)
-        except Exception as exc:
-            return EmailSendResult(sent=False, status="failed", error=f"{type(exc).__name__}: {exc}")
-        return EmailSendResult(sent=True, status="sent")
+        attempts = max(1, int(self.config.smtp_retry_times) + 1)
+        last_error: Exception | None = None
+        for attempt in range(attempts):
+            try:
+                self._send_message(message)
+                return EmailSendResult(sent=True, status="sent")
+            except Exception as exc:
+                last_error = exc
+                if attempt >= attempts - 1:
+                    break
+                time.sleep(max(0.0, float(self.config.smtp_retry_delay_seconds)))
+        return EmailSendResult(
+            sent=False,
+            status="failed",
+            error=f"{type(last_error).__name__}: {last_error}" if last_error else "Unknown email error",
+        )
+
+    def _send_message(self, message: EmailMessage) -> None:
+        use_ssl = self.config.smtp_use_ssl or self.config.smtp_port == 465
+        timeout = self.config.smtp_timeout_seconds
+        smtp_cls = smtplib.SMTP_SSL if use_ssl else smtplib.SMTP
+        with smtp_cls(self.config.smtp_host, self.config.smtp_port, timeout=timeout) as smtp:
+            if not use_ssl and self.config.smtp_starttls:
+                smtp.starttls()
+            if self.config.smtp_username and self.config.smtp_password:
+                smtp.login(self.config.smtp_username, self.config.smtp_password)
+            smtp.send_message(message)

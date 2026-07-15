@@ -4,7 +4,7 @@ from typing import Any
 
 from app.auto_diagnosis.beam_pipeline import BeamAutoDiagnosisPipeline
 from app.auto_diagnosis.config import AutoDiagnosisConfig
-from app.auto_diagnosis.summarizer import BeamAutoSummarizer
+from app.auto_diagnosis.summarizer import BeamAutoSummarizer, SummaryResult
 from app.data_sources.time_utils import parse_iso_datetime, parse_time_arg
 from app.utils.json import make_json_safe
 
@@ -52,11 +52,27 @@ class BeamManualDiagnosisRunner:
             "error": result.error,
         }
         fallback = _final_answer(output)
-        output["final_answer"] = self.summarizer.summarize_manual_diagnosis(
-            diagnosis=output,
+        summary_result = _summarize_manual_with_usage(self.summarizer, diagnosis=output, fallback=fallback)
+        output["final_answer"] = summary_result.text
+        output["llm_usage"] = summary_result.token_usage
+        return output
+
+
+def _summarize_manual_with_usage(
+    summarizer: Any,
+    *,
+    diagnosis: dict,
+    fallback: str,
+) -> SummaryResult:
+    if hasattr(summarizer, "summarize_manual_diagnosis_with_usage"):
+        return summarizer.summarize_manual_diagnosis_with_usage(
+            diagnosis=diagnosis,
             fallback=fallback,
         )
-        return output
+    return SummaryResult(
+        text=summarizer.summarize_manual_diagnosis(diagnosis=diagnosis, fallback=fallback),
+        token_usage=None,
+    )
 
 
 def _final_answer(output: dict[str, Any]) -> str:

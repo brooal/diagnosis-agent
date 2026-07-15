@@ -1,0 +1,17 @@
+{
+  "name": "beam_decay_drop_diagnosis",
+  "display_name": "束流 Decay / Drop 诊断",
+  "version": "1.0.0",
+  "description": "根据束流强度、MODE 和报警 PV 判断束流 normal/decay/drop 并定位原因。",
+  "type": "portable_script",
+  "category": "diagnosis",
+  "domain": "beam",
+  "entrypoint": "scripts/diagnose.py",
+  "input_schema": "assets/input_schema.json",
+  "output_schema": "assets/output_schema.json",
+  "portable": true,
+  "requires": {
+    "python": ">=3.10",
+    "packages": []
+  }
+}

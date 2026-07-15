@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BeamDecayDropDiagnosisInput",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "start": {
+      "type": "string"
+    },
+    "end": {
+      "type": "string"
+    },
+    "beam_channel": {
+      "type": "string",
+      "default": "RNG:BEAM:CURR"
+    },
+    "beam_samples": {
+      "type": "array"
+    },
+    "mode_samples": {
+      "type": "array"
+    },
+    "alarm_samples": {
+      "type": "array"
+    },
+    "config": {
+      "type": "object"
+    }
+  }
+}

@@ -13,7 +13,7 @@ from app.auto_diagnosis.incident_store import AutoIncidentStore
 from app.auto_diagnosis.operation_schedule import get_hls2_2026_plan
 from app.auto_diagnosis.progress import AutoProgressTracker
 from app.auto_diagnosis.schemas import BeamFaultEvent, BeamMonitorResult
-from app.auto_diagnosis.summarizer import BeamAutoSummarizer
+from app.auto_diagnosis.summarizer import BeamAutoSummarizer, SummaryResult
 from app.tools.base import ToolRegistry
 from app.utils.times import now_shanghai_aware
 
@@ -47,12 +47,21 @@ class BeamAutoMonitor:
         self.emailer = emailer or AutoDiagnosisEmailer(self.config)
         self.progress = progress
 
-    def run_once(self, *, now: datetime | None = None) -> BeamMonitorResult:
+    def run_once(
+        self,
+        *,
+        now: datetime | None = None,
+        start: str | None = None,
+        end: str | None = None,
+    ) -> BeamMonitorResult:
         now = now or now_shanghai_aware()
-        detect_start, detect_end = build_detect_window(
-            now,
-            detect_window_seconds=self.config.detect_window_seconds,
-        )
+        if start is None or end is None:
+            detect_start, detect_end = build_detect_window(
+                now,
+                detect_window_seconds=self.config.detect_window_seconds,
+            )
+        else:
+            detect_start, detect_end = start, end
         detect_window = {"start": detect_start, "end": detect_end}
         progress_uid = self.progress.start(detect_window=detect_window) if self.progress else None
 
@@ -103,7 +112,6 @@ class BeamAutoMonitor:
                     schedule=schedule,
                     action="skipped",
                 )
-                self._mark_active_incident_normal(detect_end)
                 self.store.record_monitor_run(
                     monitor_type="beam",
                     action="skipped",
@@ -163,13 +171,36 @@ class BeamAutoMonitor:
 
         if not pipeline_result.events:
             self._progress(progress_uid, stage="classify", summary="未发现明确 drop 或 decay。")
-            recovered = self._mark_active_incident_normal(detect_end)
-            action = "recovered" if recovered else "normal"
-            summary = "当前 30s 检测窗口内未发现束流故障。"
+            active = self.store.latest_active_incident()
+            recovery = pipeline_result.raw_output.get("recovery") or {}
+            recovery_ready = bool(recovery.get("is_recovered_window"))
+            if active is not None and not recovery_ready:
+                self.store.mark_recovery_unconfirmed(active, observed_at=detect_end)
+                action = "updated_incident"
+                summary = (
+                    "当前窗口未触发新的 drop/decay 边沿，但束流、MODE 或 Beam Error "
+                    "尚未同时满足恢复条件，已有故障继续保持。"
+                )
+                run_status = "fault"
+                incident_uid = active.incident_uid
+            else:
+                recovered = self._mark_active_incident_normal(detect_end) if active else False
+                action = "recovered" if recovered else "normal"
+                if active and not recovered:
+                    summary = (
+                        f"当前窗口满足恢复条件，正在确认恢复 "
+                        f"({active.normal_window_count}/{self.config.incident_recovery_confirm_windows})。"
+                    )
+                elif recovered:
+                    summary = "束流已连续满足恢复条件，故障恢复确认完成。"
+                else:
+                    summary = "当前检测窗口内束流状态正常。"
+                run_status = "ok"
+                incident_uid = active.incident_uid if active else None
             self.store.record_monitor_run(
                 monitor_type="beam",
                 action=action,
-                status="ok",
+                status=run_status,
                 schedule_status=schedule["status"] if schedule else None,
                 detect_window=detect_window,
                 summary=summary,
@@ -185,6 +216,7 @@ class BeamAutoMonitor:
                 action=action,
                 schedule=schedule,
                 detect_window=detect_window,
+                incident_uid=incident_uid,
                 summary=summary,
                 data_source=self.data_source,
             )
@@ -193,14 +225,32 @@ class BeamAutoMonitor:
         event = self._select_event(pipeline_result.events)
         active = self.store.find_active_incident(event.incident_key)
         if active is None:
-            active = self.store.latest_active_incident()
+            active = self.store.find_recent_active_incident(
+                event,
+                merge_seconds=self.config.incident_merge_seconds,
+            )
+        if active is None:
+            active = self.store.find_mergeable_active_incident(
+                event,
+                merge_seconds=self.config.incident_merge_seconds,
+            )
         if active is None:
             self._progress(progress_uid, stage="summarize", summary="正在生成自动诊断报告。")
-            report = self.summarizer.summarize_new_incident(
+            report_window = (
+                event.evidence.get("report_window")
+                if isinstance(event.evidence, dict)
+                else None
+            )
+            summary_result = _summarize_new_incident_with_usage(
+                self.summarizer,
                 event=event,
                 schedule=schedule or {},
-                detect_window=detect_window,
+                detect_window=report_window or detect_window,
             )
+            report = summary_result.text
+            if summary_result.token_usage:
+                event.evidence = dict(event.evidence or {})
+                event.evidence["llm_usage"] = summary_result.token_usage
             incident = self.store.create_incident(event, report=report)
             subject = f"[束流自动诊断] {event.classification} {event.event_time}"
             self._progress(progress_uid, stage="notify", summary="正在记录通知状态。")
@@ -340,3 +390,26 @@ def _build_auto_beam_repository() -> tuple[object, str]:
 
 def auto_beam_backend() -> str:
     return os.getenv("AUTO_BEAM_DATA_BACKEND", "http").strip().lower()
+
+
+def _summarize_new_incident_with_usage(
+    summarizer: object,
+    *,
+    event: BeamFaultEvent,
+    schedule: dict,
+    detect_window: dict,
+) -> SummaryResult:
+    if hasattr(summarizer, "summarize_new_incident_with_usage"):
+        return summarizer.summarize_new_incident_with_usage(
+            event=event,
+            schedule=schedule,
+            detect_window=detect_window,
+        )
+    return SummaryResult(
+        text=summarizer.summarize_new_incident(
+            event=event,
+            schedule=schedule,
+            detect_window=detect_window,
+        ),
+        token_usage=None,
+    )

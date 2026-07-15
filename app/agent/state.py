@@ -47,6 +47,7 @@ class DiagnosisState(TypedDict, total=False):
 
     # 输出
     final_answer: str | None
+    llm_usage: dict[str, Any]
 
     # 错误
     error: str | None

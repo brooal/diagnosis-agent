@@ -1,0 +1,13 @@
+{
+  "name": "beam_state_diagnosis",
+  "version": "1.0.0",
+  "type": "portable_script",
+  "category": "diagnosis",
+  "domain": "beam",
+  "stage": "phenomenon_detection",
+  "script": "scripts/diagnose.py",
+  "input_schema": "assets/input_schema.json",
+  "output_schema": "assets/output_schema.json",
+  "produces": ["phenomena", "evidence", "candidate_causes", "recommended_next_skills"],
+  "tags": ["beam", "beam_trip", "beam_drop", "topoff_decay", "portable_skill"]
+}

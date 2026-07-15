@@ -26,11 +26,18 @@ class BeamAutoDiagnosisPipeline:
                 start_time=start,
                 end_time=end,
             )
+            beam_context_samples = _fetch_beam_context_samples(
+                self.repo,
+                channel_id=self.config.beam_channel_id,
+                start=start,
+                lookback_seconds=self.config.cause_lookback_seconds,
+            )
             mode_samples = self.repo.fetch_raw_channel_samples(
                 [int(DECAY_MODE_CHANNEL["channel_id"])],
                 start,
                 end,
             )
+            previous_mode_sample = _fetch_previous_mode_sample(self.repo, start)
             alarm_samples = self.repo.fetch_raw_channel_samples(
                 _alarm_channel_ids(),
                 start,
@@ -44,9 +51,23 @@ class BeamAutoDiagnosisPipeline:
                 error=f"{type(exc).__name__}: {exc}",
             )
 
-        beam_evidence = _analyze_beam_samples(beam_samples, self.config)
-        mode_evidence = _analyze_mode_samples(mode_samples)
+        beam_evidence = _analyze_beam_samples(
+            beam_samples,
+            self.config,
+            context_samples=beam_context_samples,
+        )
+        mode_evidence = _analyze_mode_samples(
+            mode_samples,
+            previous_sample=previous_mode_sample,
+            window_start=start,
+        )
         alarm_evidence = _analyze_alarm_samples(alarm_samples)
+        recovery_evidence = _analyze_recovery_window(
+            beam=beam_evidence,
+            mode=mode_evidence,
+            alarms=alarm_evidence,
+            config=self.config,
+        )
         classification = _classify_window(
             beam=beam_evidence,
             mode=mode_evidence,
@@ -58,7 +79,15 @@ class BeamAutoDiagnosisPipeline:
             "beam": beam_evidence,
             "mode": mode_evidence,
             "alarms": alarm_evidence,
+            "recovery": recovery_evidence,
         }
+        report_window = _report_window_for_event(
+            classification,
+            detect_window,
+            beam_evidence,
+        )
+        if report_window:
+            evidence["report_window"] = report_window
         if classification == "normal":
             return BeamPipelineResult(
                 status="normal",
@@ -98,6 +127,27 @@ class BeamAutoDiagnosisPipeline:
         )
 
 
+def _fetch_beam_context_samples(
+    repo: Any,
+    *,
+    channel_id: int,
+    start: str,
+    lookback_seconds: int,
+) -> list[PVSample]:
+    if lookback_seconds <= 0:
+        return []
+    try:
+        start_dt = datetime.fromisoformat(str(start))
+        context_start = format_shanghai_datetime(start_dt - timedelta(seconds=lookback_seconds))
+        return repo.fetch_sample_channel_samples(
+            channel_id=channel_id,
+            start_time=context_start,
+            end_time=start,
+        )
+    except Exception:
+        return []
+
+
 def build_detect_window(now: datetime, *, detect_window_seconds: int) -> tuple[str, str]:
     start = now - timedelta(seconds=detect_window_seconds)
     return format_shanghai_datetime(start), format_shanghai_datetime(now)
@@ -111,13 +161,19 @@ def _alarm_channel_ids() -> list[int]:
     ]
 
 
-def _analyze_beam_samples(samples: list[PVSample], config: AutoDiagnosisConfig) -> dict[str, Any]:
+def _analyze_beam_samples(
+    samples: list[PVSample],
+    config: AutoDiagnosisConfig,
+    *,
+    context_samples: list[PVSample] | None = None,
+) -> dict[str, Any]:
     values = [sample.float_val for sample in samples]
     if not values:
         return {
             "channel_id": config.beam_channel_id,
             "channel": config.beam_channel,
             "sample_count": 0,
+            "context_sample_count": len(context_samples or []),
             "has_samples": False,
             "normal_range": [config.beam_normal_min, config.beam_normal_max],
             "decay_range": [config.beam_decay_min, config.beam_decay_max],
@@ -147,11 +203,16 @@ def _analyze_beam_samples(samples: list[PVSample], config: AutoDiagnosisConfig) 
     below_normal_ratio = len(below_normal_points) / len(values)
     relative_decay = max(0.0, first - last) / first if first > 0 else 0.0
     median_below_normal_abs = max(0.0, config.beam_normal_min - median)
+    drop_context = _analyze_drop_context(
+        _dedupe_sort_samples([*(context_samples or []), *samples]),
+        config,
+    )
 
     return {
         "channel_id": config.beam_channel_id,
         "channel": samples[0].channel_name or config.beam_channel,
         "sample_count": len(values),
+        "context_sample_count": len(context_samples or []),
         "has_samples": True,
         "first_time": samples[0].smpl_time,
         "last_time": samples[-1].smpl_time,
@@ -182,11 +243,7 @@ def _analyze_beam_samples(samples: list[PVSample], config: AutoDiagnosisConfig) 
             and relative_decay < config.decay_ratio_threshold
         ),
         "has_low_points": bool(low_points),
-        "has_drop_shape": (
-            first >= config.beam_decay_min
-            and min_value <= config.absolute_low_threshold
-            and drop_ratio >= config.drop_ratio_threshold
-        ),
+        "has_drop_shape": drop_context["has_drop_step"],
         "has_decay_shape": (
             first >= config.beam_normal_min
             and median < config.beam_normal_min
@@ -195,10 +252,96 @@ def _analyze_beam_samples(samples: list[PVSample], config: AutoDiagnosisConfig) 
             and relative_decay >= config.decay_ratio_threshold
         ),
         "is_rising": delta > 0,
+        **drop_context,
     }
 
 
-def _analyze_mode_samples(samples: list[PVRawSample]) -> dict[str, Any]:
+def _dedupe_sort_samples(samples: list[PVSample]) -> list[PVSample]:
+    dedup = {(sample.smpl_time, sample.nanosecs, sample.float_val): sample for sample in samples}
+    return sorted(dedup.values(), key=lambda item: (item.smpl_time, item.nanosecs))
+
+
+def _analyze_drop_context(samples: list[PVSample], config: AutoDiagnosisConfig) -> dict[str, Any]:
+    if len(samples) < 2:
+        return {
+            "has_drop_step": False,
+            "has_drop_from_baseline": False,
+            "drop_baseline_value": None,
+            "drop_baseline_time": None,
+            "estimated_drop_start_time": None,
+            "drop_start_value": None,
+            "drop_min_after_start": None,
+            "drop_step_ratio": None,
+            "drop_ratio_from_baseline": 0.0,
+        }
+
+    best: dict[str, Any] | None = None
+    for index in range(1, len(samples)):
+        prev = samples[index - 1]
+        curr = samples[index]
+        if prev.float_val <= config.absolute_low_threshold:
+            continue
+        step_ratio = curr.float_val / prev.float_val if prev.float_val > 0 else 1.0
+        if step_ratio > config.drop_step_ratio_threshold:
+            continue
+
+        baseline_sample = next(
+            (
+                sample
+                for sample in reversed(samples[:index])
+                if config.beam_normal_min <= sample.float_val <= config.beam_normal_max
+            ),
+            prev,
+        )
+        tail_values = [sample.float_val for sample in samples[index:]]
+        min_after = min(tail_values)
+        baseline_drop_ratio = (
+            (baseline_sample.float_val - min_after) / baseline_sample.float_val
+            if baseline_sample.float_val > 0
+            else 0.0
+        )
+        best = {
+            "has_drop_step": True,
+            "has_drop_from_baseline": True,
+            "drop_baseline_value": baseline_sample.float_val,
+            "drop_baseline_time": baseline_sample.smpl_time,
+            "estimated_drop_start_time": curr.smpl_time,
+            "drop_start_value": curr.float_val,
+            "drop_min_after_start": min_after,
+            "drop_step_ratio": step_ratio,
+            "drop_ratio_from_baseline": baseline_drop_ratio,
+        }
+        break
+
+    return best or {
+        "has_drop_step": False,
+        "has_drop_from_baseline": False,
+        "drop_baseline_value": None,
+        "drop_baseline_time": None,
+        "estimated_drop_start_time": None,
+        "drop_start_value": None,
+        "drop_min_after_start": None,
+        "drop_step_ratio": None,
+        "drop_ratio_from_baseline": 0.0,
+    }
+
+
+def _fetch_previous_mode_sample(repo: Any, start: str) -> PVRawSample | None:
+    method = getattr(repo, "fetch_latest_raw_sample_before", None)
+    if not callable(method):
+        return None
+    try:
+        return method(int(DECAY_MODE_CHANNEL["channel_id"]), start)
+    except Exception:
+        return None
+
+
+def _analyze_mode_samples(
+    samples: list[PVRawSample],
+    *,
+    previous_sample: PVRawSample | None = None,
+    window_start: str | None = None,
+) -> dict[str, Any]:
     sorted_samples = sorted(samples, key=lambda item: (item.smpl_time, item.nanosecs))
     values = [sample.num_val for sample in sorted_samples if sample.num_val is not None]
     transitions = []
@@ -214,17 +357,34 @@ def _analyze_mode_samples(samples: list[PVRawSample]) -> dict[str, Any]:
             )
     zero_samples = [sample for sample in sorted_samples if sample.num_val == 0]
     one_samples = [sample for sample in sorted_samples if sample.num_val == 1]
+    inherited_zero = bool(previous_sample and previous_sample.num_val == 0)
+    zero_times = [_sample_event(sample) for sample in zero_samples]
+    if inherited_zero:
+        zero_times.insert(
+            0,
+            {
+                "time": window_start or previous_sample.smpl_time,
+                "nanosecs": previous_sample.nanosecs,
+                "value": 0,
+                "inherited": True,
+                "source_time": previous_sample.smpl_time,
+            },
+        )
     return {
         "channel_id": int(DECAY_MODE_CHANNEL["channel_id"]),
         "pv": DECAY_MODE_CHANNEL["pv"],
         "sample_count": len(sorted_samples),
         "values": values,
-        "has_zero": bool(zero_samples),
+        "previous_sample": _sample_event(previous_sample) if previous_sample else None,
+        "inherited_start_value": previous_sample.num_val if previous_sample else None,
+        "inherited_zero_at_window_start": inherited_zero,
+        "has_zero": bool(zero_times),
         "has_one": bool(one_samples),
-        "zero_times": [_sample_event(sample) for sample in zero_samples],
+        "zero_times": zero_times,
         "one_times": [_sample_event(sample) for sample in one_samples],
         "transitions": transitions,
         "last_value": values[-1] if values else None,
+        "effective_value": values[-1] if values else (previous_sample.num_val if previous_sample else None),
     }
 
 
@@ -272,17 +432,55 @@ def _classify_window(
     mode: dict[str, Any],
     alarms: dict[str, Any],
 ) -> str:
-    if alarms["has_beam_error"]:
-        return "drop"
-    if beam.get("has_low_points") or beam.get("has_drop_shape"):
+    if (
+        beam.get("has_low_points")
+        or beam.get("has_drop_shape")
+        or beam.get("has_drop_from_baseline")
+        or alarms.get("has_beam_error")
+    ):
         return "drop"
     if mode["has_zero"]:
-        return "decay"
-    if alarms["active_count"] > 0:
         return "decay"
     if beam.get("has_samples") and beam.get("has_decay_shape"):
         return "decay"
     return "normal"
+
+
+def _analyze_recovery_window(
+    *,
+    beam: dict[str, Any],
+    mode: dict[str, Any],
+    alarms: dict[str, Any],
+    config: AutoDiagnosisConfig,
+) -> dict[str, Any]:
+    beam_median = beam.get("median")
+    beam_median_normal = bool(
+        beam.get("has_samples")
+        and beam_median is not None
+        and config.beam_normal_min <= beam_median <= config.beam_normal_max
+    )
+    beam_points_normal = bool(
+        beam.get("has_samples")
+        and float(beam.get("normal_point_ratio") or 0.0) >= 0.8
+    )
+    mode_is_one = mode.get("effective_value") == 1 and not mode.get("has_zero")
+    no_beam_error = not alarms.get("has_beam_error")
+    return {
+        "is_recovered_window": bool(
+            beam.get("has_samples")
+            and beam_median_normal
+            and beam_points_normal
+            and mode_is_one
+            and no_beam_error
+        ),
+        "beam_samples_present": bool(beam.get("has_samples")),
+        "beam_median_normal": beam_median_normal,
+        "beam_normal_point_ratio": beam.get("normal_point_ratio"),
+        "beam_normal_point_ratio_required": 0.8,
+        "mode_effective_value": mode.get("effective_value"),
+        "mode_is_one_without_zero": mode_is_one,
+        "no_beam_error": no_beam_error,
+    }
 
 
 def _first_low_time(samples: list[PVSample], threshold: float) -> str | None:
@@ -325,6 +523,8 @@ def _event_time(
     alarms: dict[str, Any],
     beam: dict[str, Any],
 ) -> str:
+    if classification == "drop" and beam.get("estimated_drop_start_time"):
+        return str(beam["estimated_drop_start_time"])
     if classification == "drop" and beam.get("has_low_points"):
         return str(beam.get("first_low_time") or beam.get("first_time") or end)
     if mode["zero_times"]:
@@ -332,6 +532,19 @@ def _event_time(
     if alarms["active_alarms"]:
         return str(alarms["active_alarms"][0]["time"])
     return end
+
+
+def _report_window_for_event(
+    classification: str,
+    detect_window: dict[str, str],
+    beam: dict[str, Any],
+) -> dict[str, str] | None:
+    if classification == "drop" and beam.get("estimated_drop_start_time"):
+        return {
+            "start": str(beam["estimated_drop_start_time"]),
+            "end": detect_window["end"],
+        }
+    return detect_window
 
 
 def _incident_key(
@@ -343,10 +556,6 @@ def _incident_key(
     mode = evidence["mode"]
     if mode["zero_times"]:
         return f"{classification}:mode:{mode['zero_times'][0]['time']}"
-    alarms = evidence["alarms"]
-    if alarms["active_alarms"]:
-        alarm = alarms["active_alarms"][0]
-        return f"{classification}:alarm:{alarm.get('pv')}:{alarm.get('time')}"
     return f"{classification}:beam:{start}:{end}"
 
 
@@ -361,7 +570,10 @@ def _summary(
         if beam.get("has_samples")
         else "当前窗口未查询到束流 sample 数据。"
     )
-    mode_line = "窗口内出现 MODE=0。" if mode["has_zero"] else "窗口内未发现 MODE=0。"
+    if mode.get("inherited_zero_at_window_start"):
+        mode_line = "窗口开始时 MODE 已处于 0 状态。"
+    else:
+        mode_line = "窗口内出现 MODE=0。" if mode["has_zero"] else "窗口内未发现 MODE=0。"
     if primary:
         cause_line = (
             f"主要候选原因：{primary.get('pv')}={primary.get('value')}"
@@ -370,6 +582,10 @@ def _summary(
     else:
         cause_line = "当前窗口未匹配到明确报警 PV。"
     if classification == "drop":
+        baseline = beam.get("drop_baseline_value")
+        min_after = beam.get("drop_min_after_start") or beam.get("min")
+        if baseline is not None and min_after is not None:
+            beam_line = f"束流从故障前基准约 {baseline:.3f} 下降至最低约 {min_after:.3f}。"
         return f"检测到束流掉束现象。{beam_line}{mode_line}{cause_line}"
     return f"检测到束流 decay/恒流异常现象。{beam_line}{mode_line}{cause_line}"
 

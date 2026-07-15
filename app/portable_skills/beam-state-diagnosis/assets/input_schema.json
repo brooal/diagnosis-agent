@@ -1,0 +1,65 @@
+{
+  "type": "object",
+  "required": ["start", "end", "beam_samples"],
+  "properties": {
+    "start": {"type": "string"},
+    "end": {"type": "string"},
+    "beam_channel": {"type": "string"},
+    "beam_samples": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["time", "value"],
+        "properties": {
+          "time": {"type": "string"},
+          "value": {"type": "number"},
+          "nanosecs": {"type": "integer"},
+          "channel": {"type": "string"}
+        }
+      }
+    },
+    "mode_samples": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["time", "value"],
+        "properties": {
+          "time": {"type": "string"},
+          "value": {"type": "number"},
+          "nanosecs": {"type": "integer"},
+          "channel": {"type": "string"},
+          "channel_id": {"type": "integer"}
+        }
+      }
+    },
+    "alarm_samples": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["time", "value", "pv"],
+        "properties": {
+          "time": {"type": "string"},
+          "value": {"type": "number"},
+          "pv": {"type": "string"},
+          "channel_id": {"type": "integer"},
+          "subsystem": {"type": "string"},
+          "description": {"type": "string"},
+          "meaning": {"type": "string"},
+          "normal_value": {"type": "number"}
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "properties": {
+        "normal_low": {"type": "number"},
+        "normal_high": {"type": "number"},
+        "absolute_drop_threshold": {"type": "number"},
+        "relative_drop_threshold": {"type": "number"},
+        "decay_drop_ratio_threshold": {"type": "number"},
+        "near_zero_ratio": {"type": "number"},
+        "alarm_window_seconds": {"type": "integer"}
+      }
+    }
+  }
+}

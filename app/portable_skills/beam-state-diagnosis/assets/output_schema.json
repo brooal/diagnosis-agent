@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "required": ["ok", "summary", "evidence", "candidate_causes", "output"],
+  "properties": {
+    "ok": {"type": "boolean"},
+    "summary": {"type": "string"},
+    "error": {"type": ["string", "null"]},
+    "evidence": {"type": "array"},
+    "candidate_causes": {"type": "array"},
+    "output": {
+      "type": "object",
+      "required": ["phenomena", "recommended_next_skills"],
+      "properties": {
+        "phenomena": {"type": "array"},
+        "recommended_next_skills": {"type": "array"},
+        "features": {"type": "object"}
+      }
+    }
+  }
+}

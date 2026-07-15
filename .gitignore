@@ -1,8 +1,4 @@
 .venv/
-.env
-.env.*
-!.env.example
-!.env.local.example
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -14,3 +10,5 @@ diagnosis_agent.db
 docker-data/
 experiments/
 tests/test_pss_ablation.py
+.env
+

@@ -94,6 +94,9 @@ const els = {
   runStatus: document.querySelector("#runStatus"),
   autoSchedulerStatus: document.querySelector("#autoSchedulerStatus"),
   autoSchedulerMeta: document.querySelector("#autoSchedulerMeta"),
+  openAutoProbeModalButton: document.querySelector("#openAutoProbeModalButton"),
+  autoProbeModal: document.querySelector("#autoProbeModal"),
+  closeAutoProbeModalButton: document.querySelector("#closeAutoProbeModalButton"),
   autoProbeForm: document.querySelector("#autoProbeForm"),
   autoProbeLlmToggle: document.querySelector("#autoProbeLlmToggle"),
   autoProbeEmail: document.querySelector("#autoProbeEmail"),
@@ -155,12 +158,17 @@ function bindEvents() {
   els.chatTab.addEventListener("click", () => setMode("chat"));
   els.autoTab.addEventListener("click", () => setMode("auto"));
   els.chatForm.addEventListener("submit", submitChat);
+  els.openAutoProbeModalButton.addEventListener("click", openAutoProbeModal);
   els.autoProbeForm.addEventListener("submit", submitAutoProbe);
   els.manualBeamForm.addEventListener("submit", submitManualBeamDiagnosis);
   els.toggleAutoSchedulerButton.addEventListener("click", toggleAutoScheduler);
   els.refreshAutoReportsButton.addEventListener("click", loadAutoDashboard);
   els.closeDrawerButton.addEventListener("click", closeProcessDrawer);
   els.closeAutoReportModalButton.addEventListener("click", closeAutoReportModal);
+  els.closeAutoProbeModalButton.addEventListener("click", closeAutoProbeModal);
+  els.autoProbeModal.addEventListener("click", (event) => {
+    if (event.target === els.autoProbeModal) closeAutoProbeModal();
+  });
 }
 
 function setMode(mode) {
@@ -489,8 +497,8 @@ async function submitManualBeamDiagnosis(event) {
   try {
     const payload = {
       time_window: {
-        start: els.manualBeamStart.value.trim(),
-        end: els.manualBeamEnd.value.trim(),
+        start: normalizeDateTimeInput(els.manualBeamStart.value),
+        end: normalizeDateTimeInput(els.manualBeamEnd.value),
       },
     };
     const response = await request(api.manualDashboard, {
@@ -535,6 +543,7 @@ function appendLiveRunCard(response, userQuery) {
     time_window: null,
     started_at: new Date().toISOString(),
     final_answer: response.final_answer,
+    llm_usage: response.llm_usage,
     candidate_cause_count: (response.candidate_causes || []).length,
   };
   els.chatMessages.insertAdjacentHTML("beforeend", renderDiagnosisRunCard(run));
@@ -555,6 +564,7 @@ function renderStoredRunDetail(detail) {
   setStatus(els.runStatus, run.status || caseInfo.status || "completed");
   els.runDetail.innerHTML = `
     ${renderRunOverview(detail)}
+    ${renderTokenUsage(extractRunTokenUsage(detail), "LLM Token 用量")}
     ${renderAnswer(run.final_answer || caseInfo.final_answer || "无最终结论。")}
     ${renderCandidateCauses(caseInfo.candidate_causes || [])}
     ${renderReadableTimeline(detail)}
@@ -585,6 +595,43 @@ function renderRunOverview(detail) {
       </div>
     </section>
   `;
+}
+
+function extractRunTokenUsage(detail) {
+  if (detail.run?.llm_usage) return detail.run.llm_usage;
+  const finalItem = [...(detail.items || [])].reverse().find((item) => item.item_type === "final_answer");
+  return finalItem?.content?.llm_usage || null;
+}
+
+function renderTokenUsage(usage, title = "Token 用量") {
+  if (!usage) return "";
+  const fields = [
+    ["总 tokens", usage.total_tokens],
+    ["输入 tokens", usage.prompt_tokens],
+    ["输出 tokens", usage.completion_tokens],
+    ["LLM 调用", usage.calls || (Array.isArray(usage.items) ? usage.items.length : 1)],
+    ["模型", usage.model],
+    ["来源", usage.source === "provider" ? "服务商返回" : usage.source === "estimated" ? "本地估算" : usage.source],
+  ];
+  return `
+    <section class="process-card token-usage-card">
+      <h4>${escapeHtml(title)}</h4>
+      <div class="info-grid token-usage-grid">
+        ${fields
+          .filter(([, value]) => value !== undefined && value !== null && value !== "")
+          .map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`)
+          .join("")}
+      </div>
+      ${Array.isArray(usage.items) && usage.items.length > 1 ? renderJsonDetails("展开每次 LLM 调用明细", usage.items) : ""}
+    </section>
+  `;
+}
+
+function formatTokenUsageCompact(usage) {
+  if (!usage) return "未记录";
+  const total = usage.total_tokens ?? "";
+  const calls = usage.calls ? ` / ${usage.calls} 次调用` : "";
+  return total ? `${total} tokens${calls}` : "未记录";
 }
 
 function renderReadableTimeline(detail) {
@@ -825,7 +872,7 @@ async function loadAutoSchedulerStatus() {
     els.autoSchedulerMeta.textContent = error.message;
   }
 }
-
+s
 function renderAutoScheduler(status) {
   state.autoScheduler = status;
   setStatus(
@@ -833,7 +880,7 @@ function renderAutoScheduler(status) {
     status.running ? "running" : "neutral",
     status.running ? "运行中" : "已停止",
   );
-  const executionText = status.require_operation_schedule ? "仅 Operation 日自动运行" : "不限制运行计划";
+  const executionText = status.require_operation_schedule ? "仅Operation 日运行" : "不限制运行计划";
   const startedText = status.started_at ? formatTime(status.started_at) : "尚未启动";
   els.autoSchedulerMeta.innerHTML = `
     <div class="monitor-summary-card ${status.running ? "running" : "stopped"}">
@@ -845,9 +892,9 @@ function renderAutoScheduler(status) {
         ${statusChip(status.running ? "running" : "neutral", status.running ? "运行中" : "已停止")}
       </div>
       <div class="monitor-facts">
-        <div><span>检查节奏</span><strong>每 ${escapeHtml(status.interval_seconds)}s 检查最近 ${escapeHtml(status.detect_window_seconds)}s</strong></div>
+        <div><span>检查节奏</span><strong>每 ${escapeHtml(status.interval_seconds)}s 检查一次</strong></div>
         <div><span>运行条件</span><strong>${escapeHtml(executionText)}</strong></div>
-        <div><span>数据源</span><strong>${escapeHtml(status.data_source_backend || "http")}</strong></div>
+        <div><span>数据源</span><strong>HLS-Ⅱ</strong></div>
         <div><span>启动时间</span><strong>${escapeHtml(startedText)}</strong></div>
       </div>
       ${status.last_error ? `<div class="monitor-error">最近错误：${escapeHtml(status.last_error)}</div>` : ""}
@@ -904,6 +951,7 @@ function setSchedulerButtonsLoading(value) {
 
 async function submitAutoProbe(event) {
   event.preventDefault();
+  openAutoProbeModal();
   setAutoProbeLoading(true);
   els.autoProbeResult.innerHTML = `<div class="detail-empty">正在运行自动束流诊断测试...</div>`;
   try {
@@ -925,6 +973,14 @@ async function submitAutoProbe(event) {
 function setAutoProbeLoading(value) {
   els.runAutoProbeButton.disabled = value;
   els.autoProbeForm.classList.toggle("loading", value);
+}
+
+function openAutoProbeModal() {
+  els.autoProbeModal.hidden = false;
+}
+
+function closeAutoProbeModal() {
+  els.autoProbeModal.hidden = true;
 }
 
 
@@ -1296,14 +1352,13 @@ function renderReportDay(day, reports, defaultOpen = false) {
 
 function renderReportItem(report) {
   const title = `${report.classification || "fault"} · ${report.severity || "unknown"}`;
-  const cause = report.primary_cause?.pv || report.primary_cause?.cause_type || "未定位主原因";
+  const cause = reportCauseLabel(report.primary_cause);
   const active = report.incident_uid === state.selectedAutoIncidentUid ? " active" : "";
   return `
     <article class="report-item${active}">
       <button class="report-main" type="button" data-incident="${escapeAttr(report.incident_uid)}">
         <div class="report-title-row">
           <strong>${escapeHtml(title)}</strong>
-          ${statusChip(report.status || "completed", reportStatusLabel(report.status))}
         </div>
         <div class="report-time">${escapeHtml(formatTime(report.first_seen_at))}</div>
         <div class="report-cause">${escapeHtml(cause)}</div>
@@ -1316,6 +1371,11 @@ function renderReportItem(report) {
       </div>
     </article>
   `;
+}
+
+function reportCauseLabel(cause) {
+  if (!cause) return "未定位主原因";
+  return cause.pv || cause.cause_type || cause.meaning || cause.description || "未定位主原因";
 }
 
 function toggleAutoReportMenu(incidentUid) {
@@ -1443,46 +1503,33 @@ async function openAutoReport(incidentUid) {
   markSelectedAutoReport();
   openAutoReportModal();
   els.autoReportInlineTitle.textContent = "自动诊断报告";
-  setStatus(els.autoReportInlineStatus, "running", "加载中");
+  els.autoReportInlineStatus.hidden = true;
   els.autoReportInlineDetail.innerHTML = `<div class="detail-empty">正在加载报告详情...</div>`;
-  els.autoBeamChart.innerHTML = `<div class="detail-empty">正在等待报告时间窗口...</div>`;
+  els.autoBeamChart.innerHTML = "";
   if (incidentUid === MOCK_AUTO_REPORT.incident_uid) {
     const detail = { report: MOCK_AUTO_REPORT, notifications: [] };
     renderAutoReportDetail(detail);
-    renderBeamChart(els.autoBeamChart, mockBeamSeries(), "测试报告对应束流曲线");
+    renderReportChartDisclosure(detail.report, { mock: true });
     return;
   }
   try {
     const detail = await request(api.autoReport(incidentUid));
     renderAutoReportDetail(detail);
-    const window = getReportBeamWindow(detail.report || {});
-    if (window) {
-      try {
-        await loadBeamChart(
-          els.autoBeamChart,
-          window.start,
-          window.end,
-          "报告对应束流曲线",
-        );
-      } catch (chartError) {
-        els.autoBeamChart.innerHTML = `<div class="detail-empty">报告已加载，但束流曲线获取失败：${escapeHtml(chartError.message)}</div>`;
-      }
-    } else {
-      els.autoBeamChart.innerHTML = `<div class="detail-empty">该报告没有可用于读取束流曲线的时间窗口。</div>`;
-    }
+    renderReportChartDisclosure(detail.report || {});
   } catch (error) {
-    setStatus(els.autoReportInlineStatus, "failed");
+    els.autoReportInlineStatus.hidden = true;
     els.autoReportInlineDetail.innerHTML = `<div class="detail-empty">${escapeHtml(error.message)}</div>`;
-    els.autoBeamChart.innerHTML = `<div class="detail-empty">${escapeHtml(error.message)}</div>`;
+    els.autoBeamChart.innerHTML = "";
   }
 }
 
 function renderAutoReportDetail(detail) {
   const report = detail.report || {};
   els.autoReportInlineTitle.textContent = `${report.classification || "束流故障"} · ${formatTime(report.first_seen_at)}`;
-  setStatus(els.autoReportInlineStatus, report.status || "completed", reportStatusLabel(report.status));
+  els.autoReportInlineStatus.hidden = true;
   els.autoReportInlineDetail.innerHTML = `
     ${renderReportOverview(report)}
+    ${renderTokenUsage(report.llm_usage, "报告生成 Token 用量")}
     ${renderAnswer(report.report || "无报告正文。")}
     ${renderCandidateCauses(report.candidate_causes || [])}
     <div class="selected-report-actions">
@@ -1495,10 +1542,43 @@ function renderAutoReportDetail(detail) {
 function clearSelectedAutoReport() {
   state.selectedAutoIncidentUid = null;
   els.autoReportInlineTitle.textContent = "选中报告";
-  setStatus(els.autoReportInlineStatus, "neutral", "未选择");
+  els.autoReportInlineStatus.hidden = true;
   els.autoReportInlineDetail.innerHTML = `<div class="detail-empty">从左侧历史报告中选择一条记录后，这里会展示报告摘要、诊断结论和候选原因。</div>`;
-  els.autoBeamChart.innerHTML = `<div class="detail-empty">选择报告后，会实时获取该报告时间范围内的束流曲线。</div>`;
+  els.autoBeamChart.innerHTML = "";
   markSelectedAutoReport();
+}
+
+function renderReportChartDisclosure(report, options = {}) {
+  const window = getReportBeamWindow(report || {});
+  if (!window) {
+    els.autoBeamChart.innerHTML = "";
+    return;
+  }
+  els.autoBeamChart.innerHTML = `
+    <details class="chart-details">
+      <summary>查看报告对应束流曲线</summary>
+      <div class="chart-details-body">
+        <div class="detail-empty">展开后会读取 ${escapeHtml(formatTimeWindow(window))} 的束流曲线。</div>
+      </div>
+    </details>
+  `;
+  const details = els.autoBeamChart.querySelector(".chart-details");
+  const body = els.autoBeamChart.querySelector(".chart-details-body");
+  if (!details || !body) return;
+  let loaded = false;
+  details.addEventListener("toggle", async () => {
+    if (!details.open || loaded) return;
+    loaded = true;
+    if (options.mock) {
+      renderBeamChart(body, mockBeamSeries(), "报告对应束流曲线");
+      return;
+    }
+    try {
+      await loadBeamChart(body, window.start, window.end, "报告对应束流曲线");
+    } catch (error) {
+      body.innerHTML = `<div class="detail-empty">${escapeHtml(formatBeamSeriesError(error))}</div>`;
+    }
+  });
 }
 
 function openAutoReportModal() {
@@ -1517,11 +1597,11 @@ function markSelectedAutoReport() {
 }
 
 function getReportBeamWindow(report) {
+  if (report.report_window?.start && report.report_window?.end) return report.report_window;
+  const evidenceReportWindow = report.evidence?.report_window;
+  if (evidenceReportWindow?.start && evidenceReportWindow?.end) return evidenceReportWindow;
   const evidenceWindow = report.evidence?.detect_window;
   if (evidenceWindow?.start && evidenceWindow?.end) return evidenceWindow;
-  if (report.first_seen_at && report.last_seen_at) {
-    return { start: report.first_seen_at, end: report.last_seen_at };
-  }
   return null;
 }
 
@@ -1553,14 +1633,15 @@ function mockBeamSeries() {
 }
 
 function renderReportOverview(report) {
+  const window = getReportBeamWindow(report) || {};
   const fields = [
     ["报告编号", report.incident_uid],
-    ["状态", reportStatusLabel(report.status)],
     ["分类", report.classification],
     ["严重程度", report.severity],
-    ["首次发现", formatTime(report.first_seen_at)],
-    ["最近发现", formatTime(report.last_seen_at)],
-    ["恢复确认时间", formatTime(report.recovered_at)],
+    ["开始时间", formatTime(window.start)],
+    ["结束时间", formatTime(window.end)],
+    ["故障发生时刻", formatTime(report.fault_time || report.first_seen_at)],
+    ["Token 用量", formatTokenUsageCompact(report.llm_usage)],
   ];
   return `
     <section class="process-card">
@@ -1581,6 +1662,7 @@ function renderManualBeamResult(response) {
   const evidence = response.evidence || {};
   els.manualBeamResult.innerHTML = `
     ${renderAnswer(response.final_answer || response.summary || response.error || "无诊断结果。")}
+    ${renderTokenUsage(response.llm_usage, "本次 LLM 总结 Token 用量")}
     ${renderManualMetrics(response, event, evidence)}
     ${event ? renderCandidateCauses(event.candidate_causes || []) : ""}
     ${renderJsonDetails("展开完整诊断结果", response)}
@@ -1606,6 +1688,7 @@ function renderManualDashboard(payload) {
     panels.push(`
       <section class="manual-subpanel" data-panel="beam">
         ${renderManualKpis(kpi)}
+        ${renderTokenUsage(diagnosis.llm_usage, "本次 LLM 总结 Token 用量")}
         ${renderDropCausePanel(event, payload.quadrupole_power || {})}
       </section>
     `);
@@ -1614,6 +1697,7 @@ function renderManualDashboard(payload) {
     panels.push(`
       <section class="manual-subpanel" data-panel="decay">
         ${renderManualKpis(kpi)}
+        ${renderTokenUsage(diagnosis.llm_usage, "本次 LLM 总结 Token 用量")}
         ${renderDecayPvTables(payload.decay || {})}
       </section>
     `);
@@ -1622,6 +1706,7 @@ function renderManualDashboard(payload) {
     panels.push(`
       <section class="manual-subpanel" data-panel="normal">
         ${renderManualKpis(kpi)}
+        ${renderTokenUsage(diagnosis.llm_usage, "本次 LLM 总结 Token 用量")}
         <div class="detail-empty">该时间范围内未发现明确 drop 或 decay。</div>
       </section>
     `);
@@ -1629,6 +1714,7 @@ function renderManualDashboard(payload) {
   tabButtons.push(`<button class="sub-tab" type="button" data-subtab="report">LLM 诊断总结</button>`);
   panels.push(`
     <section class="manual-subpanel hidden" data-panel="report">
+      ${renderTokenUsage(diagnosis.llm_usage, "本次 LLM 总结 Token 用量")}
       ${renderAnswer(diagnosis.final_answer || diagnosis.summary || diagnosis.error || "无诊断结果。")}
       ${event ? renderCandidateCauses(event.candidate_causes || []) : ""}
       ${renderJsonDetails("展开完整诊断结果", diagnosis)}
@@ -1803,12 +1889,12 @@ function renderBeamChart(container, data, title) {
   }
   const values = samples.map((item) => Number(item.value)).filter((value) => Number.isFinite(value));
   const summary = data.summary || {};
-  const minValue = Math.min(...values, Number(summary.normal_range?.[0] ?? 495), Number(summary.absolute_low_threshold ?? 100));
-  const maxValue = Math.max(...values, Number(summary.normal_range?.[1] ?? 501));
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
   const padded = padRange(minValue, maxValue);
-  const width = 860;
-  const height = 220;
-  const pad = { left: 52, right: 18, top: 16, bottom: 34 };
+  const width = 920;
+  const height = 280;
+  const pad = { left: 64, right: 24, top: 20, bottom: 54 };
   const plotWidth = width - pad.left - pad.right;
   const plotHeight = height - pad.top - pad.bottom;
   const xFor = (index) => pad.left + (samples.length === 1 ? 0 : (index / (samples.length - 1)) * plotWidth);
@@ -1817,6 +1903,13 @@ function renderBeamChart(container, data, title) {
   const area = `${pad.left},${height - pad.bottom} ${points.join(" ")} ${pad.left + plotWidth},${height - pad.bottom}`;
   const normalLow = summary.normal_range?.[0];
   const normalHigh = summary.normal_range?.[1];
+  const yTicks = buildYAxisTicks(padded.min, padded.max, 5);
+  const midIndex = Math.floor((samples.length - 1) / 2);
+  const xTicks = [
+    { index: 0, anchor: "start" },
+    ...(samples.length > 2 ? [{ index: midIndex, anchor: "middle" }] : []),
+    { index: samples.length - 1, anchor: "end" },
+  ];
   container.innerHTML = `
     <div class="chart-wrap">
       <div class="chart-head">
@@ -1827,16 +1920,20 @@ function renderBeamChart(container, data, title) {
         <div class="chart-meta">min ${formatNumber(summary.min)} · median ${formatNumber(summary.median)} · max ${formatNumber(summary.max)}</div>
       </div>
       <svg class="beam-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="束流强度曲线">
+        ${yTicks.map((tick) => `
+          <line class="beam-grid" x1="${pad.left}" y1="${yFor(tick).toFixed(2)}" x2="${width - pad.right}" y2="${yFor(tick).toFixed(2)}"></line>
+          <text class="beam-label" text-anchor="end" x="${pad.left - 8}" y="${(yFor(tick) + 4).toFixed(2)}">${escapeHtml(formatNumber(tick))}</text>
+        `).join("")}
         <line class="beam-axis" x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${height - pad.bottom}"></line>
         <line class="beam-axis" x1="${pad.left}" y1="${height - pad.bottom}" x2="${width - pad.right}" y2="${height - pad.bottom}"></line>
-        ${normalLow !== undefined ? `<line class="beam-threshold" x1="${pad.left}" y1="${yFor(Number(normalLow)).toFixed(2)}" x2="${width - pad.right}" y2="${yFor(Number(normalLow)).toFixed(2)}"></line>` : ""}
-        ${normalHigh !== undefined ? `<line class="beam-threshold" x1="${pad.left}" y1="${yFor(Number(normalHigh)).toFixed(2)}" x2="${width - pad.right}" y2="${yFor(Number(normalHigh)).toFixed(2)}"></line>` : ""}
-        <text class="beam-label" x="8" y="${yFor(padded.max).toFixed(2)}">${escapeHtml(formatNumber(padded.max))}</text>
-        <text class="beam-label" x="8" y="${yFor(padded.min).toFixed(2)}">${escapeHtml(formatNumber(padded.min))}</text>
+        ${thresholdInRange(normalLow, padded) ? `<line class="beam-threshold" x1="${pad.left}" y1="${yFor(Number(normalLow)).toFixed(2)}" x2="${width - pad.right}" y2="${yFor(Number(normalLow)).toFixed(2)}"></line>` : ""}
+        ${thresholdInRange(normalHigh, padded) ? `<line class="beam-threshold" x1="${pad.left}" y1="${yFor(Number(normalHigh)).toFixed(2)}" x2="${width - pad.right}" y2="${yFor(Number(normalHigh)).toFixed(2)}"></line>` : ""}
         <polygon class="beam-area" points="${area}"></polygon>
         <polyline class="beam-line" points="${points.join(" ")}"></polyline>
-        <text class="beam-label" x="${pad.left}" y="${height - 10}">${escapeHtml(formatTime(samples[0]?.time))}</text>
-        <text class="beam-label" text-anchor="end" x="${width - pad.right}" y="${height - 10}">${escapeHtml(formatTime(samples[samples.length - 1]?.time))}</text>
+        ${xTicks.map((tick) => `
+          <line class="beam-axis" x1="${xFor(tick.index).toFixed(2)}" y1="${height - pad.bottom}" x2="${xFor(tick.index).toFixed(2)}" y2="${height - pad.bottom + 5}"></line>
+          <text class="beam-label" text-anchor="${tick.anchor}" x="${xFor(tick.index).toFixed(2)}" y="${height - 20}">${escapeHtml(formatChartTime(samples[tick.index]?.time))}</text>
+        `).join("")}
       </svg>
     </div>
   `;
@@ -1847,10 +1944,26 @@ function padRange(minValue, maxValue) {
     return { min: 0, max: 1 };
   }
   if (minValue === maxValue) {
-    return { min: minValue - 1, max: maxValue + 1 };
+    return { min: minValue - 0.5, max: maxValue + 0.5 };
   }
-  const pad = (maxValue - minValue) * 0.08;
+  const pad = Math.max((maxValue - minValue) * 0.16, 0.05);
   return { min: minValue - pad, max: maxValue + pad };
+}
+
+function buildYAxisTicks(minValue, maxValue, count) {
+  const step = (maxValue - minValue) / Math.max(1, count - 1);
+  return Array.from({ length: count }, (_, index) => minValue + step * index);
+}
+
+function thresholdInRange(value, range) {
+  const number = Number(value);
+  return Number.isFinite(number) && number >= range.min && number <= range.max;
+}
+
+function formatChartTime(value) {
+  if (!value) return "";
+  const text = formatTime(value);
+  return text.includes(" ") ? text.split(" ").pop() : text;
 }
 
 function formatNumber(value) {
@@ -1973,10 +2086,24 @@ async function request(url, options = {}) {
   });
   const data = await response.json().catch(() => null);
   if (!response.ok) {
-    const message = data?.detail || data?.message || response.statusText;
+    const detail = data?.detail;
+    const message = typeof detail === "object" && detail !== null
+      ? detail.message || detail.code
+      : detail || data?.message || response.statusText;
     throw new Error(message);
   }
   return data;
+}
+
+function formatBeamSeriesError(error) {
+  const message = String(error?.message || "");
+  if (message.includes("归档历史数据系统登录失败") || message.includes("archive_auth_failed")) {
+    return "束流曲线暂时无法读取：归档历史数据系统登录失败。请稍后重试，或检查 HTTP 数据源账号、密码和 CAS 服务状态。";
+  }
+  if (message.includes("归档历史数据")) {
+    return `束流曲线暂时无法读取：${message}`;
+  }
+  return "束流曲线暂时无法读取，请稍后重试。";
 }
 
 function parseJsonField(value, label) {
@@ -1985,6 +2112,14 @@ function parseJsonField(value, label) {
   } catch (error) {
     throw new Error(`${label} 不是合法 JSON`);
   }
+}
+
+function normalizeDateTimeInput(value) {
+  const text = String(value || "").trim();
+  if (!text) return text;
+  if (/[zZ]$|[+-]\d{2}:\d{2}$/.test(text)) return text;
+  const withSeconds = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(text) ? `${text}:00` : text;
+  return `${withSeconds}+08:00`;
 }
 
 function setLoading(value) {

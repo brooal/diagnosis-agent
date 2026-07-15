@@ -299,6 +299,7 @@ UV_CACHE_DIR=/tmp/uv-cache uv run python experiments/pss_ablation/run_all.py \
 
 ```bash
 UV_CACHE_DIR=/tmp/uv-cache uv run python experiments/pss_ablation/run_all.py \
+  --config experiments/pss_ablation/config.local.json \
   --methods llm_only tool_only tool_llm_rewrite harness_agent
 ```
 
@@ -306,6 +307,7 @@ UV_CACHE_DIR=/tmp/uv-cache uv run python experiments/pss_ablation/run_all.py \
 
 ```bash
 UV_CACHE_DIR=/tmp/uv-cache uv run python experiments/pss_ablation/run_all.py \
+  --config experiments/pss_ablation/config.local.json \
   --methods llm_only tool_only tool_llm_rewrite harness_agent \
   --limit 1
 ```
@@ -314,8 +316,9 @@ UV_CACHE_DIR=/tmp/uv-cache uv run python experiments/pss_ablation/run_all.py \
 
 ```bash
 UV_CACHE_DIR=/tmp/uv-cache uv run python experiments/pss_ablation/run_all.py \
+  --config experiments/pss_ablation/config.local.json \
   --methods llm_only tool_only tool_llm_rewrite harness_agent \
-  --case-id pss_s3_emergency_stop
+  --case-id pss_emergency_stop_3
 ```
 
 输出目录：
@@ -358,24 +361,29 @@ UV_CACHE_DIR=/tmp/uv-cache uv run pytest tests/test_pss_ablation.py
 
 ## 9. 邮件测试与配置
 
-自动束流诊断邮件只在检测到故障报告时发送。`SMTP_ENABLED=true` 只是打开发送能力，不代表每 30 秒都发邮件。
+自动束流诊断邮件只在检测到新的故障报告时发送。`AUTO_EMAIL_ENABLED=true` 只是打开发送能力，不代表每 30 秒都发邮件。
 
 常用配置：
 
 ```bash
-SMTP_ENABLED=true
+AUTO_EMAIL_ENABLED=true
+AUTO_EMAIL_DRY_RUN=false
+AUTO_EMAIL_TO=receiver@example.com
+AUTO_EMAIL_FROM=diagnosis@example.com
+
 SMTP_HOST=smtp.example.com
 SMTP_PORT=465
-SMTP_USER=your_user
+SMTP_USERNAME=your_user
 SMTP_PASSWORD=your_password
-SMTP_FROM=diagnosis@example.com
-SMTP_TO=receiver@example.com
 SMTP_USE_SSL=true
 SMTP_STARTTLS=false
-SMTP_TIMEOUT_SECONDS=20
+SMTP_TIMEOUT_SECONDS=60
+SMTP_RETRY_TIMES=2
+SMTP_RETRY_DELAY_SECONDS=2
 ```
 
 如果使用 `465` 端口，通常需要 `SMTP_USE_SSL=true`。如果使用 `587` 端口，通常是 `SMTP_USE_SSL=false` 且 `SMTP_STARTTLS=true`。
+`SMTP_RETRY_TIMES=2` 表示首次发送失败后再重试 2 次，共最多 3 次尝试；每次都会重新建立 SMTP 连接。
 
 手动触发一次自动诊断探测并指定临时收件人：
 

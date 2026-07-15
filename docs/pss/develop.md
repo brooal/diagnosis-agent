@@ -76,13 +76,13 @@ All_IOStation_UnNormal
 当前工程是 TP 系统，IOC 启动时使用的前缀是：
 
 ```text
-HALF-TP:PSS
+STCF-BTP:PSS
 ```
 
 后续如果迁移到 BTP 系统，PV 前缀可能会变化。因此开发时不要把前缀写死在代码里，应从环境变量或配置文件读取，例如：
 
 ```text
-PSS_PV_PREFIX=HALF-TP:PSS
+PSS_PV_PREFIX=STCF-BTP:PSS
 ```
 
 工具内部统一通过以下方式拼接完整 PV：
@@ -953,7 +953,7 @@ from datetime import timedelta
 
 
 def diagnose_pss_interlock_interrupt(start_time, end_time):
-    pv_prefix = os.getenv("PSS_PV_PREFIX", "HALF-TP:PSS")
+    pv_prefix = os.getenv("PSS_PV_PREFIX", "STCF-BTP:PSS")
 
     # 1. 查询状态 PV
     state_samples = fetch_pv_samples(
@@ -1007,7 +1007,7 @@ def diagnose_pss_interlock_interrupt(start_time, end_time):
 ```yaml
 pv_prefix:
   env: "PSS_PV_PREFIX"
-  default: "HALF-TP:PSS"
+  default: "STCF-BTP:PSS"
 
 state_pvs:
   interlocked: "sysStatus_interlocked:bi"

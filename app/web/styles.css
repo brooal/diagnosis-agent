@@ -50,6 +50,7 @@ button,
 input,
 select,
 textarea {
+  box-sizing: border-box;
   font: inherit;
 }
 
@@ -197,6 +198,10 @@ button {
   padding: 0 9px;
   font-size: 12px;
   font-weight: 700;
+}
+
+.status-chip[hidden] {
+  display: none;
 }
 
 .count-pill {
@@ -565,6 +570,13 @@ button {
   overflow: auto;
 }
 
+.manual-note {
+  margin: -4px 0 18px;
+  color: #8a9692;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .progress-divider {
   height: 1px;
   background: var(--line);
@@ -646,6 +658,12 @@ button {
 
 .section-heading > div {
   min-width: 0;
+}
+
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .section-heading h3,
@@ -897,7 +915,7 @@ select:focus {
 
 .monitor-facts {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
   gap: 8px;
 }
 
@@ -920,11 +938,10 @@ select:focus {
 .monitor-facts strong,
 .progress-context strong {
   min-width: 0;
-  overflow: hidden;
   color: var(--ink);
   font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .monitor-error {
@@ -946,12 +963,15 @@ select:focus {
 
 .progress-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 220px;
+  min-width: 0;
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
 .progress-context {
   display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-content: start;
   gap: 8px;
 }
@@ -967,6 +987,7 @@ select:focus {
 
 .progress-empty,
 .progress-card {
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
@@ -1001,6 +1022,15 @@ select:focus {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  min-width: 0;
+}
+
+.progress-topline {
+  flex-wrap: wrap;
+}
+
+.progress-topline .status-chip {
+  flex: 0 0 auto;
 }
 
 .progress-topline strong {
@@ -1019,6 +1049,7 @@ select:focus {
 }
 
 .progress-meta {
+  flex-wrap: wrap;
   margin-top: 8px;
   color: var(--muted);
   font-size: 12px;
@@ -1049,6 +1080,7 @@ select:focus {
 
 .progress-group {
   display: grid;
+  min-width: 0;
   gap: 8px;
 }
 
@@ -1346,12 +1378,31 @@ select:focus {
 }
 
 .beam-chart {
-  min-height: 260px;
+  min-height: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
   margin-bottom: 14px;
-  overflow: hidden;
+  overflow: visible;
+}
+
+.beam-chart:empty {
+  display: none;
+}
+
+.chart-details {
+  background: #fff;
+}
+
+.chart-details summary {
+  cursor: pointer;
+  padding: 12px 14px;
+  font-weight: 800;
+}
+
+.chart-details-body {
+  border-top: 1px solid var(--line);
+  min-height: 320px;
 }
 
 .manual-panel .beam-chart,
@@ -1362,9 +1413,8 @@ select:focus {
 
 .chart-wrap {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  height: 100%;
-  min-height: 260px;
+  grid-template-rows: auto auto;
+  min-height: 370px;
 }
 
 .chart-head {
@@ -1387,7 +1437,7 @@ select:focus {
 
 .beam-svg {
   width: 100%;
-  height: 220px;
+  height: 280px;
   display: block;
 }
 
@@ -1412,9 +1462,14 @@ select:focus {
   stroke-width: 1;
 }
 
+.beam-grid {
+  stroke: #e7eeeb;
+  stroke-width: 1;
+}
+
 .beam-label {
   fill: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .summary-metrics {
@@ -1435,6 +1490,15 @@ select:focus {
   border-radius: 8px;
   background: #fbfcfc;
   padding: 8px;
+}
+
+.token-usage-card {
+  border-color: #dce8e5;
+  background: #fbfdfc;
+}
+
+.token-usage-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .compact-metrics span {
@@ -1703,6 +1767,18 @@ select:focus {
   box-shadow: 0 26px 70px rgba(25, 45, 38, 0.24);
 }
 
+.probe-modal {
+  display: grid;
+  width: min(760px, calc(100vw - 56px));
+  max-height: min(720px, calc(100vh - 56px));
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfc;
+  box-shadow: 0 26px 70px rgba(25, 45, 38, 0.24);
+}
+
 .modal-header {
   display: flex;
   align-items: center;
@@ -1723,6 +1799,14 @@ select:focus {
   min-height: 0;
   grid-template-rows: minmax(180px, 1fr) auto;
   gap: 12px;
+  overflow: auto;
+  padding: 14px;
+}
+
+.probe-modal-body {
+  display: grid;
+  min-height: 0;
+  gap: 14px;
   overflow: auto;
   padding: 14px;
 }
@@ -1912,6 +1996,14 @@ select:focus {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+
+.manual-workspace .form-grid {
+  grid-template-columns: 1fr;
+}
+
+.manual-workspace .send-button {
+  width: 100%;
 }
 
 .loading {

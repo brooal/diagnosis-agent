@@ -1,0 +1,17 @@
+{
+  "name": "accelerator_fault_classifier",
+  "display_name": "加速器故障类型判断",
+  "version": "1.0.0",
+  "description": "根据用户问题、scope 和输入样本判断下一步应调用哪类诊断 Skill。",
+  "type": "portable_script",
+  "category": "diagnosis",
+  "domain": "accelerator",
+  "entrypoint": "scripts/classify.py",
+  "input_schema": "assets/input_schema.json",
+  "output_schema": "assets/output_schema.json",
+  "portable": true,
+  "requires": {
+    "python": ">=3.10",
+    "packages": []
+  }
+}

@@ -8,6 +8,7 @@ from app.agent.state import DiagnosisState
 from app.llm.client import LLMClient
 from app.llm.parser import extract_json_object
 from app.llm.prompts import build_final_messages, build_react_messages
+from app.llm.token_usage import merge_usage
 from app.rag.service import RagService
 from app.skills.common import SkillRegistry
 from app.tools.registry import ToolRegistry
@@ -165,7 +166,9 @@ def plan_node(
             evidence=state.get("evidence", []),
             candidate_causes=state.get("candidate_causes", []),
         )
-        raw = llm.complete(messages, temperature=0.1)
+        completion = llm.complete_with_usage(messages, temperature=0.1)
+        raw = completion.content
+        usage = _usage_record("react_plan", completion.usage)
         parsed = extract_json_object(raw)
 
         thought = str(parsed.get("thought") or "").strip()
@@ -197,6 +200,7 @@ def plan_node(
                 payload={
                     **react_entry,
                     "raw_llm_output": raw,
+                    "llm_usage": usage,
                 },
             )
             return {
@@ -206,6 +210,7 @@ def plan_node(
                 "current_action": action,
                 "react_history": state.get("react_history", []) + [react_entry],
                 "final_answer": final_answer,
+                "llm_usage": _merge_state_usage(state, usage),
             }
 
         if action_type not in {"tool", "skill"}:
@@ -236,6 +241,7 @@ def plan_node(
             payload={
                 **react_entry,
                 "raw_llm_output": raw,
+                "llm_usage": usage,
             },
         )
 
@@ -244,6 +250,7 @@ def plan_node(
             "current_thought": thought,
             "current_action": action,
             "react_history": state.get("react_history", []) + [react_entry],
+            "llm_usage": _merge_state_usage(state, usage),
         }
     except Exception as exc:
         error = f"{type(exc).__name__}: {exc}"
@@ -497,7 +504,13 @@ def summarize_node(
             candidate_causes=candidate_causes,
             react_history=state.get("react_history", []),
         )
-        final_answer = llm.complete(messages, temperature=0.2)
+        completion = llm.complete_with_usage(messages, temperature=0.2)
+        final_answer = completion.content
+        summary_usage = _usage_record("final_summary", completion.usage)
+    else:
+        summary_usage = None
+
+    llm_usage = _merge_state_usage(state, summary_usage)
 
     harness.complete_run(
         run_uid=state["run_uid"],
@@ -511,13 +524,14 @@ def summarize_node(
         "done": True,
         "status": "completed",
         "final_answer": final_answer,
+        "llm_usage": llm_usage,
     }
 
     recorder.append(
         run_uid=state["run_uid"],
         case_uid=state["case_uid"],
         event_type="final_answer",
-        payload={"final_answer": final_answer},
+        payload={"final_answer": final_answer, "llm_usage": llm_usage},
     )
 
     recorder.append(
@@ -527,10 +541,26 @@ def summarize_node(
         payload={
             "candidate_causes": candidate_causes,
             "evidence_count": len(evidence),
+            "llm_usage": llm_usage,
         },
     )
 
     return new_state
+
+
+def _usage_record(stage: str, usage: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not usage:
+        return None
+    return {**usage, "stage": stage}
+
+
+def _merge_state_usage(state: DiagnosisState, usage: dict[str, Any] | None) -> dict[str, Any] | None:
+    existing = state.get("llm_usage")
+    if not usage:
+        return existing
+    if existing and isinstance(existing.get("items"), list):
+        return merge_usage(*existing["items"], usage)
+    return merge_usage(existing, usage)
 
 # 使用工具失败节点
 def fail_node(

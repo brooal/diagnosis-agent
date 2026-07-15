@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AcceleratorFaultClassifierOutput",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "ok",
+    "summary",
+    "diagnosis",
+    "error"
+  ],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "diagnosis": {
+      "type": "object"
+    },
+    "error": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

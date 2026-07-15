@@ -1,0 +1,17 @@
+{
+  "name": "pss_interlock_diagnosis",
+  "display_name": "PSS 安全联锁故障排查",
+  "version": "1.0.0",
+  "description": "诊断 PSS 联锁到解锁事件，并定位急停、剂量、门禁、卡盒、PLC/IO 等原因。",
+  "type": "portable_script",
+  "category": "diagnosis",
+  "domain": "pss",
+  "entrypoint": "scripts/diagnose.py",
+  "input_schema": "assets/input_schema.json",
+  "output_schema": "assets/output_schema.json",
+  "portable": true,
+  "requires": {
+    "python": ">=3.10",
+    "packages": []
+  }
+}

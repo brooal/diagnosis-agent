@@ -1,0 +1,17 @@
+{
+  "name": "quadrupole_power_diagnosis",
+  "display_name": "四极铁电源诊断",
+  "version": "1.0.0",
+  "description": "检查四极铁电源电流是否存在突降或掉零。",
+  "type": "portable_script",
+  "category": "diagnosis",
+  "domain": "power",
+  "entrypoint": "scripts/diagnose.py",
+  "input_schema": "assets/input_schema.json",
+  "output_schema": "assets/output_schema.json",
+  "portable": true,
+  "requires": {
+    "python": ">=3.10",
+    "packages": []
+  }
+}

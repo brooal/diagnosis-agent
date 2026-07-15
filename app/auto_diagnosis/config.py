@@ -49,7 +49,7 @@ class AutoDiagnosisConfig:
     beam_normal_max: float = 501.0
     beam_decay_min: float = 490.0
     beam_decay_max: float = 503.0
-    drop_ratio_threshold: float = 0.75
+    drop_step_ratio_threshold: float = 0.70
     severe_drop_ratio_threshold: float = 0.75
     decay_ratio_threshold: float = 0.01
     absolute_low_threshold: float = 100.0
@@ -61,6 +61,10 @@ class AutoDiagnosisConfig:
     smtp_use_ssl: bool = False
     smtp_starttls: bool = True
     smtp_timeout_seconds: int = 20
+    smtp_retry_times: int = 2
+    smtp_retry_delay_seconds: float = 2.0
+    notification_retry_interval_seconds: int = 300
+    notification_retry_batch_size: int = 10
     smtp_username: str | None = None
     smtp_password: str | None = None
     email_from: str | None = None
@@ -88,7 +92,10 @@ class AutoDiagnosisConfig:
             beam_normal_max=_get_float("AUTO_BEAM_NORMAL_MAX", 501.0),
             beam_decay_min=_get_float("AUTO_BEAM_DECAY_MIN", 490.0),
             beam_decay_max=_get_float("AUTO_BEAM_DECAY_MAX", 503.0),
-            drop_ratio_threshold=_get_float("AUTO_BEAM_DROP_RATIO_THRESHOLD", 0.75),
+            drop_step_ratio_threshold=_get_float(
+                "AUTO_BEAM_DROP_STEP_RATIO_THRESHOLD",
+                0.70,
+            ),
             severe_drop_ratio_threshold=_get_float(
                 "AUTO_BEAM_SEVERE_DROP_RATIO_THRESHOLD",
                 0.75,
@@ -102,6 +109,10 @@ class AutoDiagnosisConfig:
             smtp_use_ssl=_get_bool("SMTP_USE_SSL", False),
             smtp_starttls=_get_bool("SMTP_STARTTLS", True),
             smtp_timeout_seconds=_get_int("SMTP_TIMEOUT_SECONDS", 20),
+            smtp_retry_times=_get_int("SMTP_RETRY_TIMES", 2),
+            smtp_retry_delay_seconds=_get_float("SMTP_RETRY_DELAY_SECONDS", 2.0),
+            notification_retry_interval_seconds=_get_int("AUTO_NOTIFICATION_RETRY_INTERVAL_SECONDS", 300),
+            notification_retry_batch_size=_get_int("AUTO_NOTIFICATION_RETRY_BATCH_SIZE", 10),
             smtp_username=os.getenv("SMTP_USERNAME") or None,
             smtp_password=os.getenv("SMTP_PASSWORD") or None,
             email_from=os.getenv("AUTO_EMAIL_FROM") or os.getenv("SMTP_USERNAME") or None,

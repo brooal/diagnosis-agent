@@ -5,7 +5,7 @@ from fnmatch import fnmatchcase
 from typing import Any
 
 
-DEFAULT_PSS_PREFIX = "HALF-BTP:PSS:"
+DEFAULT_PSS_PREFIX = "STCF-BTP:PSS:"
 
 PSS_STATE_PVS: dict[str, str] = {
     "interlocked": "sysStatus_interlocked:bi",
@@ -224,4 +224,5 @@ def _expand_known_pattern(pattern: str, *, prefix: str | None) -> list[str]:
 
 
 def _normalize_prefix(prefix: str) -> str:
+    prefix = prefix.strip().replace("：", ":")
     return prefix if prefix.endswith(":") else f"{prefix}:"
