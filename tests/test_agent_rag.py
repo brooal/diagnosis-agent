@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.agent.nodes import retrieve_rag_node
+from app.agent.runner import _agent_archive_backend
 from app.llm.prompts import build_react_messages
 from app.rag.schemas import RagSearchResult
 
@@ -68,6 +69,20 @@ class FakeRag:
 class BrokenRag:
     def search(self, *args, **kwargs) -> list[RagSearchResult]:
         raise RuntimeError("qdrant unavailable")
+
+
+def test_agent_archive_backend_defaults_to_http(monkeypatch) -> None:
+    monkeypatch.delenv("CHAT_DIAGNOSIS_DATA_BACKEND", raising=False)
+    monkeypatch.delenv("AUTO_BEAM_DATA_BACKEND", raising=False)
+
+    assert _agent_archive_backend() == "http"
+
+
+def test_agent_archive_backend_prefers_chat_setting(monkeypatch) -> None:
+    monkeypatch.setenv("AUTO_BEAM_DATA_BACKEND", "http")
+    monkeypatch.setenv("CHAT_DIAGNOSIS_DATA_BACKEND", "sql")
+
+    assert _agent_archive_backend() == "sql"
 
 
 def _base_state(**overrides):

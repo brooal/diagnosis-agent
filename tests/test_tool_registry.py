@@ -198,6 +198,23 @@ def test_build_tool_registry_filters_agent_visible_tools(
     } <= all_names
 
 
+def test_build_tool_registry_forwards_explicit_archive_backend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str | None] = {}
+
+    def fake_build_archive_repository(*, backend: str | None = None):
+        captured["backend"] = backend
+        return FakePVRepo(), None
+
+    monkeypatch.setattr("app.tools.build_archive_repository", fake_build_archive_repository)
+    monkeypatch.setattr("app.tools.get_settings", FakeSettings)
+
+    build_tool_registry(backend="http")
+
+    assert captured == {"backend": "http"}
+
+
 def test_builtin_tools_use_runtime_dependencies_and_validate_required_arguments() -> None:
     registry = _ensure_builtin_modules_loaded()
     set_tool_runtime(

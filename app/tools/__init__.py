@@ -25,8 +25,8 @@ def _load_builtin_tool_modules() -> None:
     _builtin_tools_loaded = True
 
 
-def build_tool_registry() -> ToolRegistry:
-    pv_repo, remote_db = build_archive_repository()
+def build_tool_registry(*, backend: str | None = None) -> ToolRegistry:
+    pv_repo, remote_db = build_archive_repository(backend=backend)
     set_tool_runtime(
         remote_db=remote_db,
         pv_repo=pv_repo,

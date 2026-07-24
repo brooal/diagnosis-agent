@@ -180,6 +180,8 @@ ARCHIVE_HTTP_TOKEN=your_token
 Chat diagnosis:
 
 ```bash
+CHAT_DIAGNOSIS_DATA_BACKEND=http
+
 curl -X POST http://127.0.0.1:8002/api/v1/agent/chat \
   -H "Content-Type: application/json" \
   -d '{
@@ -306,4 +308,3 @@ UV_CACHE_DIR=/tmp/uv-cache uv run pytest --ignore=tests/test_api.py
 - `sysStatus_Eunlocked:bi` is treated as an auxiliary/result state in PSS diagnosis, not as a direct cause unless explicit command evidence exists.
 - The default local database is SQLite. Production or shared deployments should use a managed database and read-only archive credentials.
 - The built-in fake PSS data is only for local demonstrations and tests.
-

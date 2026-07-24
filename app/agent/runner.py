@@ -27,7 +27,7 @@ class DiagnosisAgentRunner:
         self.harness = HarnessService(db)
         self.recorder = DBTraceRecorder(self.harness)
 
-        self.tools = build_tool_registry()
+        self.tools = build_tool_registry(backend=_agent_archive_backend())
         self.skills = build_skill_registry()
         self.rag = build_rag_service()
 
@@ -179,6 +179,15 @@ def _resolve_enable_rag(value: bool | None, scope: dict) -> bool:
     if "enable_rag" in scope:
         return _as_bool(scope["enable_rag"], default=False)
     return _as_bool(os.getenv("AGENT_ENABLE_RAG"), default=False)
+
+
+def _agent_archive_backend() -> str:
+    """Use the same HTTP archive path as automatic beam diagnosis by default."""
+    return (
+        os.getenv("CHAT_DIAGNOSIS_DATA_BACKEND")
+        or os.getenv("AUTO_BEAM_DATA_BACKEND")
+        or "http"
+    ).strip().lower()
 
 
 def _resolve_rag_limit(value: int | None, scope: dict) -> int:

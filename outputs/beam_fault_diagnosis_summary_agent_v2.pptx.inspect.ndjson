@@ -1,0 +1,81 @@
+{"kind":"deck","id":"pr/j319qu","name":"Deck"}
+{"kind":"layout","layoutId":"1b41086b-e19d-4262-a06c-17ecc9b2fa91","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"c4ac7f20-5baa-46ba-abde-4bb7ff93efe0","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/jzfock","slide":1,"title":"束流诊断已形成“检测—归因—闭环”完整链路","textShapes":13}
+{"kind":"textbox","id":"sh/lwvi5wru","slide":1,"name":"slide1-title","text":"束流诊断已形成“检测—归因—闭环”完整链路","textPreview":"束流诊断已形成“检测—归因—闭环”完整链路","textChars":21,"textLines":1,"bbox":[42,34,1238,686]}
+{"kind":"textbox","id":"sh/y9kjah83","slide":1,"name":"slide1-subtitle","text":"规则负责判定与证据组织，模型负责面向运维人员的报告表达。","textPreview":"规则负责判定与证据组织，模型负责面向运维人员的报告表达。","textChars":28,"textLines":1,"bbox":[42,116,1238,604]}
+{"kind":"shape","id":"sh/zut03m9o","slide":1,"name":"process-line","bbox":[88,244,1096,6]}
+{"kind":"shape","id":"sh/c72187qd","slide":1,"name":"step-node-1","bbox":[42,216,62,62]}
+{"kind":"textbox","id":"sh/x8bi1cri","slide":1,"name":"step-number-1","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[60,233,1220,487]}
+{"kind":"textbox","id":"sh/a5kj6x87","slide":1,"name":"step-label-1","text":"检测","textPreview":"检测","textChars":2,"textLines":1,"bbox":[42,304,1238,416]}
+{"kind":"textbox","id":"sh/b6t0z29s","slide":1,"name":"step-body-1","text":"30 s 窗口叠加 600 s 历史上下文\n同步读取束流电流、MODE 与关键报警 PV\n中位数、点占比、下降沿与状态迁移共同判定","textPreview":"30 s 窗口叠加 600 s 历史上下文 | 同步读取束流电流、MODE 与关键报警 PV | 中位数、点占比、下降沿与状态迁移共同判定","textChars":65,"textLines":3,"bbox":[42,360,1238,360]}
+{"kind":"shape","id":"sh/w361kbqh","slide":1,"name":"step-node-2","bbox":[453,216,62,62]}
+{"kind":"textbox","id":"sh/h4f2dgr2","slide":1,"name":"step-number-2","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[471,233,809,487]}
+{"kind":"textbox","id":"sh/pwfipg3y","slide":1,"name":"step-label-2","text":"归因","textPreview":"归因","textChars":2,"textLines":1,"bbox":[453,304,827,416]}
+{"kind":"textbox","id":"sh/ob61gbmd","slide":1,"name":"step-body-2","text":"输出 normal / drop / decay 结构化分类\n报警 PV 按时间与状态排序形成候选原因\n掉束事件进一步联动四极铁电源异常分析","textPreview":"输出 normal / drop / decay 结构化分类 | 报警 PV 按时间与状态排序形成候选原因 | 掉束事件进一步联动四极铁电源异常分析","textChars":70,"textLines":3,"bbox":[453,360,827,360]}
+{"kind":"shape","id":"sh/nax0n658","slide":1,"name":"step-node-3","bbox":[864,216,62,62]}
+{"kind":"textbox","id":"sh/29oje14n","slide":1,"name":"step-number-3","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[882,233,398,487]}
+{"kind":"textbox","id":"sh/18filwn2","slide":1,"name":"step-label-3","text":"闭环","textPreview":"闭环","textChars":2,"textLines":1,"bbox":[864,304,416,416]}
+{"kind":"textbox","id":"sh/0761crmh","slide":1,"name":"step-body-3","text":"相同故障合并为持续 active incident\n连续 3 个严格正常窗口后确认恢复\n沉淀证据、报告与通知，支持自动及手动诊断","textPreview":"相同故障合并为持续 active incident | 连续 3 个严格正常窗口后确认恢复 | 沉淀证据、报告与通知，支持自动及手动诊断","textChars":64,"textLines":3,"bbox":[864,360,416,360]}
+{"kind":"shape","id":"sh/f6d0jm5w","slide":1,"name":"llm-boundary-band","bbox":[42,590,1125,44]}
+{"kind":"textbox","id":"sh/e54zah4b","slide":1,"name":"llm-boundary-text","text":"关键边界：LLM 不直接决定故障分类或原因排序，只消费结构化证据生成报告。","textPreview":"关键边界：LLM 不直接决定故障分类或原因排序，只消费结构化证据生成报告。","textChars":37,"textLines":1,"bbox":[60,600,1220,120]}
+{"kind":"textbox","id":"sh/l4z2x036","slide":1,"name":"page-1","text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[1182,656,98,64]}
+{"kind":"notes","id":"nt/jzfock","slide":1,"text":""}
+{"kind":"slide","id":"sl/686bi3","slide":2,"title":"亮点在于可解释、可持续与可迁移","textShapes":16}
+{"kind":"textbox","id":"sh/072xonqx","slide":2,"name":"slide2-title","text":"亮点在于可解释、可持续与可迁移","textPreview":"亮点在于可解释、可持续与可迁移","textChars":15,"textLines":1,"bbox":[42,34,1238,686]}
+{"kind":"textbox","id":"sh/z6twvipc","slide":2,"name":"slide2-subtitle","text":"四项工程能力共同决定诊断结果能否进入长期运行。","textPreview":"四项工程能力共同决定诊断结果能否进入长期运行。","textChars":23,"textLines":1,"bbox":[42,116,1238,604]}
+{"kind":"shape","id":"sh/e5kfmd8r","slide":2,"name":"row-divider","bbox":[42,387,1196,1]}
+{"kind":"shape","id":"sh/d4ret876","slide":2,"name":"point-rule-1","bbox":[42,198,5,150]}
+{"kind":"textbox","id":"sh/c3ixk3q1","slide":2,"name":"point-number-1","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[64,198,1216,522]}
+{"kind":"textbox","id":"sh/r29wrypg","slide":2,"name":"point-title-1","text":"历史上下文补齐短窗口盲区","textPreview":"历史上下文补齐短窗口盲区","textChars":12,"textLines":1,"bbox":[64,232,1216,488]}
+{"kind":"textbox","id":"sh/q10vit8v","slide":2,"name":"point-body-1","text":"当前 30 s 与前序束流样本拼接\n从正常基线定位掉束起点\n并重建已经跨窗的 MODE 中断事件","textPreview":"当前 30 s 与前序束流样本拼接 | 从正常基线定位掉束起点 | 并重建已经跨窗的 MODE 中断事件","textChars":48,"textLines":3,"bbox":[64,286,1216,434]}
+{"kind":"shape","id":"sh/p0rep87a","slide":2,"name":"point-rule-2","bbox":[657,198,5,150]}
+{"kind":"textbox","id":"sh/4fidg3qp","slide":2,"name":"point-number-2","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[679,198,601,522]}
+{"kind":"textbox","id":"sh/698fed8v","slide":2,"name":"point-title-2","text":"多信号一致性抑制误判","textPreview":"多信号一致性抑制误判","textChars":10,"textLines":1,"bbox":[679,232,601,488]}
+{"kind":"textbox","id":"sh/7ahgni9g","slide":2,"name":"point-body-2","text":"束流统计、下降沿、MODE 与报警互证\n轻微边界偏离不会单独触发故障\n降低单一阈值带来的误报","textPreview":"束流统计、下降沿、MODE 与报警互证 | 轻微边界偏离不会单独触发故障 | 降低单一阈值带来的误报","textChars":46,"textLines":3,"bbox":[679,286,601,434]}
+{"kind":"shape","id":"sh/sbqxgnq1","slide":2,"name":"point-rule-3","bbox":[42,414,5,150]}
+{"kind":"textbox","id":"sh/tczypsrm","slide":2,"name":"point-number-3","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[64,414,1216,306]}
+{"kind":"textbox","id":"sh/i5ofad8z","slide":2,"name":"point-title-3","text":"状态化事件管理避免重复告警","textPreview":"状态化事件管理避免重复告警","textChars":13,"textLines":1,"bbox":[64,448,1216,272]}
+{"kind":"textbox","id":"sh/j6hgji9k","slide":2,"name":"point-body-3","text":"持续异常只更新同一 incident\n保留初始分类与主因；连续 3 个\n严格正常窗口后才确认恢复","textPreview":"持续异常只更新同一 incident | 保留初始分类与主因；连续 3 个 | 严格正常窗口后才确认恢复","textChars":48,"textLines":3,"bbox":[64,502,1216,218]}
+{"kind":"shape","id":"sh/k7qxcnqp","slide":2,"name":"point-rule-4","bbox":[657,414,5,150]}
+{"kind":"textbox","id":"sh/58zylsra","slide":2,"name":"point-number-4","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[679,414,601,306]}
+{"kind":"textbox","id":"sh/ahof6t8n","slide":2,"name":"point-title-4","text":"模块化能力便于复用扩展","textPreview":"模块化能力便于复用扩展","textChars":11,"textLines":1,"bbox":[679,448,601,272]}
+{"kind":"textbox","id":"sh/v2xwfy98","slide":2,"name":"point-body-4","text":"SQL / HTTP 数据源可替换\n现象检测、原因分析拆为 Skill\n提供独立 JSON / CLI 便携版本","textPreview":"SQL / HTTP 数据源可替换 | 现象检测、原因分析拆为 Skill | 提供独立 JSON / CLI 便携版本","textChars":56,"textLines":3,"bbox":[679,502,601,218]}
+{"kind":"textbox","id":"sh/fat4ralo","slide":2,"name":"slide2-takeaway","text":"结果：系统从“单次判断”升级为可回放、可追责、可持续演进的故障事件能力。","textPreview":"结果：系统从“单次判断”升级为可回放、可追责、可持续演进的故障事件能力。","textChars":36,"textLines":1,"bbox":[42,622,1238,98]}
+{"kind":"textbox","id":"sh/e9k3y5k3","slide":2,"name":"page-2","text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[1182,656,98,64]}
+{"kind":"notes","id":"nt/686bi3","slide":2,"text":""}
+{"kind":"slide","id":"sl/qaw1s6","slide":3,"title":"自动诊断与对话诊断通过 HarnessAgent 协同运行","textShapes":19}
+{"kind":"textbox","id":"sh/32pgby9g","slide":3,"name":"slide3-title","text":"自动诊断与对话诊断通过 HarnessAgent 协同运行","textPreview":"自动诊断与对话诊断通过 HarnessAgent 协同运行","textChars":29,"textLines":1,"bbox":[42,34,1238,686]}
+{"kind":"textbox","id":"sh/43yh43a1","slide":3,"name":"slide3-subtitle","text":"自动路径保证稳定持续，对话路径提供灵活编排；二者共享工具、技能与证据语义。","textPreview":"自动路径保证稳定持续，对话路径提供灵活编排；二者共享工具、技能与证据语义。","textChars":37,"textLines":1,"bbox":[42,114,1238,606]}
+{"kind":"shape","id":"sh/p47yd8rm","slide":3,"name":"auto-to-agent","bbox":[320,252,48,5]}
+{"kind":"shape","id":"sh/udwzy9sz","slide":3,"name":"chat-to-agent","bbox":[320,433,48,5]}
+{"kind":"shape","id":"sh/vy5g7e9k","slide":3,"name":"agent-to-recorder","bbox":[925,326,38,5]}
+{"kind":"shape","id":"sh/gzeh0ja5","slide":3,"name":"auto-entry-box","bbox":[42,180,278,151]}
+{"kind":"textbox","id":"sh/h0ny9ora","slide":3,"name":"auto-entry-title","text":"自动诊断","textPreview":"自动诊断","textChars":4,"textLines":1,"bbox":[64,201,1216,519]}
+{"kind":"textbox","id":"sh/e90zad83","slide":3,"name":"auto-entry-body","text":"Scheduler / BeamAutoMonitor\n30 s 巡检与 incident 合并\n生成报告/通知\nrun_auto 可接入 Agent","textPreview":"Scheduler / BeamAutoMonitor | 30 s 巡检与 incident 合并 | 生成报告/通知 | run_auto 可接入 Agent","textChars":75,"textLines":4,"bbox":[64,245,1216,475]}
+{"kind":"shape","id":"sh/zu90ji9o","slide":3,"name":"chat-entry-box","bbox":[42,360,278,151]}
+{"kind":"textbox","id":"sh/vit8n2tg","slide":3,"name":"chat-entry-title","text":"对话诊断","textPreview":"对话诊断","textChars":4,"textLines":1,"bbox":[64,381,1216,339]}
+{"kind":"textbox","id":"sh/uhk7uxcv","slide":3,"name":"chat-entry-body","text":"FastAPI /agent/chat\n自然语言、时间窗与多轮上下文\n按需启用 RAG，由 run_chat 进入","textPreview":"FastAPI /agent/chat | 自然语言、时间窗与多轮上下文 | 按需启用 RAG，由 run_chat 进入","textChars":57,"textLines":3,"bbox":[64,427,1216,293]}
+{"kind":"shape","id":"sh/h4bqpsbm","slide":3,"name":"harness-agent-frame","bbox":[368,176,557,343]}
+{"kind":"textbox","id":"sh/wj2pw7u1","slide":3,"name":"harness-agent-title","text":"HarnessAgent","textPreview":"HarnessAgent","textChars":12,"textLines":1,"bbox":[393,197,887,523]}
+{"kind":"textbox","id":"sh/j6d8r2ts","slide":3,"name":"harness-agent-subtitle","text":"DiagnosisAgentRunner + LangGraph","textPreview":"DiagnosisAgentRunner + LangGraph","textChars":32,"textLines":1,"bbox":[590,204,690,516]}
+{"kind":"shape","id":"sh/i5k7yxc7","slide":3,"name":"agent-flow-line","bbox":[405,286,476,5]}
+{"kind":"shape","id":"sh/58vqtcbi","slide":3,"name":"agent-node-1","bbox":[393,263,50,50]}
+{"kind":"textbox","id":"sh/47mp07ux","slide":3,"name":"agent-node-label-1","text":"初始化","textPreview":"初始化","textChars":3,"textLines":1,"bbox":[389,322,891,398]}
+{"kind":"shape","id":"sh/rad8vmto","slide":3,"name":"agent-node-2","bbox":[495,263,50,50]}
+{"kind":"textbox","id":"sh/69472hc3","slide":3,"name":"agent-node-label-2","text":"检索 RAG","textPreview":"检索 RAG","textChars":6,"textLines":1,"bbox":[491,322,789,398]}
+{"kind":"shape","id":"sh/mh8ja50n","slide":3,"name":"agent-node-3","bbox":[606,263,50,50]}
+{"kind":"textbox","id":"sh/nihkjah8","slide":3,"name":"agent-node-label-3","text":"规划","textPreview":"规划","textChars":2,"textLines":1,"bbox":[602,322,678,398]}
+{"kind":"shape","id":"sh/oja1cfit","slide":3,"name":"agent-node-4","bbox":[704,263,50,50]}
+{"kind":"textbox","id":"sh/9kj2lkze","slide":3,"name":"agent-node-label-4","text":"执行","textPreview":"执行","textChars":2,"textLines":1,"bbox":[700,322,580,398]}
+{"kind":"shape","id":"sh/ed8j650r","slide":3,"name":"agent-node-5","bbox":[802,263,50,50]}
+{"kind":"textbox","id":"sh/zehkfahw","slide":3,"name":"agent-node-label-5","text":"总结","textPreview":"总结","textChars":2,"textLines":1,"bbox":[798,322,482,398]}
+{"kind":"textbox","id":"sh/0fq18vih","slide":3,"name":"react-loop-note","text":"Plan ⇄ Act：每步只调用一个 Tool / Skill\n最多 8 步；异常显式进入 fail 节点","textPreview":"Plan ⇄ Act：每步只调用一个 Tool / Skill | 最多 8 步；异常显式进入 fail 节点","textChars":53,"textLines":2,"bbox":[393,359,887,361]}
+{"kind":"textbox","id":"sh/1gz2h0z2","slide":3,"name":"agent-capabilities","text":"Tool Registry：PV / Archive / SQL / 诊断工具\nSkill Registry：beam_state / decay_cause / quadrupole_power\nState：observations → evidence → candidate_causes","textPreview":"Tool Registry：PV / Archive / SQL / 诊断工具 | Skill Registry：beam_state / decay_cause / quadrupole_power | State：observations → evidence → ca...","textChars":147,"textLines":3,"bbox":[393,419,887,301]}
+{"kind":"shape","id":"sh/y9sjip0v","slide":3,"name":"recorder-box","bbox":[963,210,275,263]}
+{"kind":"textbox","id":"sh/jalkruhg","slide":3,"name":"recorder-title","text":"Harness 记录器","textPreview":"Harness 记录器","textChars":11,"textLines":1,"bbox":[985,233,295,487]}
+{"kind":"textbox","id":"sh/t4nmhoji","slide":3,"name":"recorder-body","text":"thread / turn / case / run\ntool_call / skill_call\nobservation / evidence / trace\nfinal_answer + token usage\n\n自动束流另保留\nincident / notification","textPreview":"thread / turn / case / run | tool_call / skill_call | observation / evidence / trace | final_answer + token usage |  | 自动束流另保留 | incident...","textChars":140,"textLines":7,"bbox":[985,286,295,434]}
+{"kind":"shape","id":"sh/83e58j2x","slide":3,"name":"agent-advantages-band","bbox":[42,570,1196,70]}
+{"kind":"textbox","id":"sh/7254fy1c","slide":3,"name":"agent-advantages","text":"优势：自动诊断稳定低成本｜对话诊断灵活可追问｜LLM 只做规划与总结｜全链路可回放、可扩展","textPreview":"优势：自动诊断稳定低成本｜对话诊断灵活可追问｜LLM 只做规划与总结｜全链路可回放、可扩展","textChars":45,"textLines":1,"bbox":[68,591,1212,129]}
+{"kind":"textbox","id":"sh/61cn6tkr","slide":3,"name":"page-3","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[1182,656,98,64]}
+{"kind":"notes","id":"nt/qaw1s6","slide":3,"text":""}

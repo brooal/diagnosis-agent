@@ -1,0 +1,134 @@
+{"kind":"deck","id":"pr/fd6bqp","name":"Deck"}
+{"kind":"layout","layoutId":"3f07ca28-b482-4a37-8c19-37f3439c8987","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"18fc54b0-050d-4d70-90a2-1e263e7c52f8","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/jpafwk","slide":1,"title":"HarnessAgent 把一次诊断组织成可解释的闭环","textShapes":21}
+{"kind":"textbox","id":"sh/f6dczutc","slide":1,"name":"rewrite-slide1-title","text":"HarnessAgent 把一次诊断组织成可解释的闭环","textPreview":"HarnessAgent 把一次诊断组织成可解释的闭环","textChars":27,"textLines":1,"bbox":[42,34,1238,686]}
+{"kind":"textbox","id":"sh/07mdszux","slide":1,"name":"rewrite-slide1-subtitle","text":"它不是单一模型，而是连接诊断任务、专业能力、事实证据和最终结论的运行框架。","textPreview":"它不是单一模型，而是连接诊断任务、专业能力、事实证据和最终结论的运行框架。","textChars":37,"textLines":1,"bbox":[42,116,1238,604]}
+{"kind":"shape","id":"sh/18vu14bi","slide":1,"name":"rewrite-slide1-left-panel","bbox":[42,184,292,346]}
+{"kind":"textbox","id":"sh/m94vu9cn","slide":1,"name":"rewrite-slide1-left-title","text":"HarnessAgent","textPreview":"HarnessAgent","textChars":12,"textLines":1,"bbox":[68,214,1212,506]}
+{"kind":"textbox","id":"sh/nadw3et8","slide":1,"name":"rewrite-slide1-left-summary","text":"负责把诊断任务\n持续推进，直到形成\n可复查的结论。","textPreview":"负责把诊断任务 | 持续推进，直到形成 | 可复查的结论。","textChars":25,"textLines":3,"bbox":[68,272,1212,448]}
+{"kind":"textbox","id":"sh/obmdwjut","slide":1,"name":"rewrite-slide1-left-io","text":"输入\n对话问题 / 自动触发\n\n输出\n证据化结论 / 处置建议","textPreview":"输入 | 对话问题 / 自动触发 |  | 输出 | 证据化结论 / 处置建议","textChars":31,"textLines":5,"bbox":[68,372,1212,348]}
+{"kind":"shape","id":"sh/9cve54be","slide":1,"name":"rewrite-slide1-process-line","bbox":[392,300,754,6]}
+{"kind":"textbox","id":"sh/id0vi5cj","slide":1,"name":"rewrite-slide1-loop-label","text":"HarnessAgent 的诊断循环","textPreview":"HarnessAgent 的诊断循环","textChars":18,"textLines":1,"bbox":[382,195,898,525]}
+{"kind":"textbox","id":"sh/3etcrat4","slide":1,"name":"rewrite-slide1-loop-note","text":"证据不足时继续下一轮；证据充分时进入总结","textPreview":"证据不足时继续下一轮；证据充分时进入总结","textChars":20,"textLines":1,"bbox":[382,236,898,484]}
+{"kind":"shape","id":"sh/f694nux0","slide":1,"name":"rewrite-slide1-node-1","bbox":[382,267,70,70]}
+{"kind":"textbox","id":"sh/e503epgf","slide":1,"name":"rewrite-slide1-number-1","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[402,290,878,430]}
+{"kind":"textbox","id":"sh/18rmp4f6","slide":1,"name":"rewrite-slide1-step-title-1","text":"理解任务","textPreview":"理解任务","textChars":4,"textLines":1,"bbox":[382,365,898,355]}
+{"kind":"textbox","id":"sh/g7ilgzyl","slide":1,"name":"rewrite-slide1-step-body-1","text":"识别诊断对象\n明确时间范围\n理解关注问题","textPreview":"识别诊断对象 | 明确时间范围 | 理解关注问题","textChars":20,"textLines":3,"bbox":[382,411,898,309]}
+{"kind":"shape","id":"sh/rip4jux4","slide":1,"name":"rewrite-slide1-node-2","bbox":[579,267,70,70]}
+{"kind":"textbox","id":"sh/6hg3apgj","slide":1,"name":"rewrite-slide1-number-2","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[599,290,681,430]}
+{"kind":"textbox","id":"sh/t4rml4fa","slide":1,"name":"rewrite-slide1-step-title-2","text":"选择能力","textPreview":"选择能力","textChars":4,"textLines":1,"bbox":[579,365,701,355]}
+{"kind":"textbox","id":"sh/sjylczyp","slide":1,"name":"rewrite-slide1-step-body-2","text":"依据已有信息\n选择合适的\n诊断 Skill","textPreview":"依据已有信息 | 选择合适的 | 诊断 Skill","textChars":21,"textLines":3,"bbox":[579,411,701,309]}
+{"kind":"shape","id":"sh/jep4faxs","slide":1,"name":"rewrite-slide1-node-3","bbox":[776,267,70,70]}
+{"kind":"textbox","id":"sh/idg365gn","slide":1,"name":"rewrite-slide1-number-3","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[796,290,484,430]}
+{"kind":"textbox","id":"sh/m9wni50f","slide":1,"name":"rewrite-slide1-step-title-3","text":"获取证据","textPreview":"获取证据","textChars":4,"textLines":1,"bbox":[776,365,504,355]}
+{"kind":"textbox","id":"sh/7a54ra10","slide":1,"name":"rewrite-slide1-step-body-3","text":"查询只读数据\n执行规则分析\n形成事实依据","textPreview":"查询只读数据 | 执行规则分析 | 形成事实依据","textChars":20,"textLines":3,"bbox":[776,411,504,309]}
+{"kind":"shape","id":"sh/8be5kfil","slide":1,"name":"rewrite-slide1-node-4","bbox":[973,267,70,70]}
+{"kind":"textbox","id":"sh/9cnmtkjq","slide":1,"name":"rewrite-slide1-number-4","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[993,290,287,430]}
+{"kind":"textbox","id":"sh/udgnmp0b","slide":1,"name":"rewrite-slide1-step-title-4","text":"形成结论","textPreview":"形成结论","textChars":4,"textLines":1,"bbox":[973,365,307,355]}
+{"kind":"textbox","id":"sh/vep4vu1w","slide":1,"name":"rewrite-slide1-step-body-4","text":"汇总候选原因\n给出置信判断\n提出下一步建议","textPreview":"汇总候选原因 | 给出置信判断 | 提出下一步建议","textChars":21,"textLines":3,"bbox":[973,411,307,309]}
+{"kind":"shape","id":"sh/wfy5ozih","slide":1,"name":"rewrite-slide1-bottom-band","bbox":[42,575,1196,70]}
+{"kind":"textbox","id":"sh/hg76xkj2","slide":1,"name":"rewrite-slide1-bottom-text","text":"核心分工：LLM 负责规划与解释｜Skill 负责专业判断｜工具提供事实数据｜Harness 保存完整过程","textPreview":"核心分工：LLM 负责规划与解释｜Skill 负责专业判断｜工具提供事实数据｜Harness 保存完整过程","textChars":53,"textLines":1,"bbox":[68,596,1212,124]}
+{"kind":"textbox","id":"sh/ihgnqp0n","slide":1,"name":"page-1","text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[1182,656,98,64]}
+{"kind":"notes","id":"nt/jpafwk","slide":1,"text":""}
+{"kind":"slide","id":"sl/tedyqt","slide":2,"title":"两种诊断方式服务不同场景，共享同一证据体系","textShapes":26}
+{"kind":"textbox","id":"sh/t8f214b6","slide":2,"name":"rewrite-slide2-title","text":"两种诊断方式服务不同场景，共享同一证据体系","textPreview":"两种诊断方式服务不同场景，共享同一证据体系","textChars":21,"textLines":1,"bbox":[42,34,1238,686]}
+{"kind":"textbox","id":"sh/65oj6psf","slide":2,"name":"rewrite-slide2-subtitle","text":"自动诊断追求持续、稳定和低成本；对话诊断解决临时、复杂并需要追问的问题。","textPreview":"自动诊断追求持续、稳定和低成本；对话诊断解决临时、复杂并需要追问的问题。","textChars":36,"textLines":1,"bbox":[42,116,1238,604]}
+{"kind":"shape","id":"sh/76xkzut0","slide":2,"name":"rewrite-slide2-divider","bbox":[638,181,2,359]}
+{"kind":"textbox","id":"sh/k3m14fa9","slide":2,"name":"rewrite-slide2-auto-title","text":"自动诊断","textPreview":"自动诊断","textChars":4,"textLines":1,"bbox":[58,184,1222,536]}
+{"kind":"textbox","id":"sh/54f2xkbu","slide":2,"name":"rewrite-slide2-auto-tagline","text":"稳定运行优先","textPreview":"稳定运行优先","textChars":6,"textLines":1,"bbox":[58,232,1222,488]}
+{"kind":"textbox","id":"sh/i14j2psj","slide":2,"name":"rewrite-slide2-chat-title","text":"对话诊断","textPreview":"对话诊断","textChars":4,"textLines":1,"bbox":[682,184,598,536]}
+{"kind":"textbox","id":"sh/j2dkvat4","slide":2,"name":"rewrite-slide2-chat-tagline","text":"灵活分析优先","textPreview":"灵活分析优先","textChars":6,"textLines":1,"bbox":[682,232,598,488]}
+{"kind":"shape","id":"sh/wfm10fud","slide":2,"name":"rewrite-slide2-auto-circle-1","bbox":[60,286,38,38]}
+{"kind":"textbox","id":"sh/x0vitkby","slide":2,"name":"rewrite-slide2-auto-number-1","text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[73,295,1207,425]}
+{"kind":"textbox","id":"sh/toje1s3u","slide":2,"name":"rewrite-slide2-auto-step-1","text":"定时检查连续时间窗","textPreview":"定时检查连续时间窗","textChars":9,"textLines":1,"bbox":[116,290,1164,430]}
+{"kind":"shape","id":"sh/snqdsn2p","slide":2,"name":"rewrite-slide2-chat-circle-1","bbox":[684,286,38,38]}
+{"kind":"textbox","id":"sh/72hwzil4","slide":2,"name":"rewrite-slide2-chat-number-1","text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[697,295,583,425]}
+{"kind":"textbox","id":"sh/618vqdkj","slide":2,"name":"rewrite-slide2-chat-step-1","text":"运维人员描述现象和时间范围","textPreview":"运维人员描述现象和时间范围","textChars":13,"textLines":1,"bbox":[740,290,540,430]}
+{"kind":"shape","id":"sh/50zex83y","slide":2,"name":"rewrite-slide2-auto-circle-2","bbox":[60,347,38,38]}
+{"kind":"textbox","id":"sh/kzqdon2d","slide":2,"name":"rewrite-slide2-auto-number-2","text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[73,356,1207,364]}
+{"kind":"textbox","id":"sh/jyhwvils","slide":2,"name":"rewrite-slide2-auto-step-2","text":"规则识别掉束、衰减或恒流中断","textPreview":"规则识别掉束、衰减或恒流中断","textChars":14,"textLines":1,"bbox":[116,351,1164,369]}
+{"kind":"shape","id":"sh/ix8vmdk7","slide":2,"name":"rewrite-slide2-chat-circle-2","bbox":[684,347,38,38]}
+{"kind":"textbox","id":"sh/xwfet832","slide":2,"name":"rewrite-slide2-chat-number-2","text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[697,356,583,364]}
+{"kind":"textbox","id":"sh/wv6dk32h","slide":2,"name":"rewrite-slide2-chat-step-2","text":"HarnessAgent 理解意图并选择 Skill","textPreview":"HarnessAgent 理解意图并选择 Skill","textChars":26,"textLines":1,"bbox":[740,351,540,369]}
+{"kind":"shape","id":"sh/ofad03ad","slide":2,"name":"rewrite-slide2-auto-circle-3","bbox":[60,408,38,38]}
+{"kind":"textbox","id":"sh/9gje98bi","slide":2,"name":"rewrite-slide2-auto-number-3","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[73,417,1207,303]}
+{"kind":"textbox","id":"sh/mdsvydc7","slide":2,"name":"rewrite-slide2-auto-step-3","text":"合并同一事件并持续判断恢复","textPreview":"合并同一事件并持续判断恢复","textChars":13,"textLines":1,"bbox":[116,412,1164,308]}
+{"kind":"shape","id":"sh/ne1w7yts","slide":2,"name":"rewrite-slide2-chat-circle-3","bbox":[684,408,38,38]}
+{"kind":"textbox","id":"sh/0badw3u1","slide":2,"name":"rewrite-slide2-chat-number-3","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[697,417,583,303]}
+{"kind":"textbox","id":"sh/1cje58bm","slide":2,"name":"rewrite-slide2-chat-step-3","text":"根据返回证据继续追查或结束","textPreview":"根据返回证据继续追查或结束","textChars":13,"textLines":1,"bbox":[740,412,540,308]}
+{"kind":"shape","id":"sh/e98vutcv","slide":2,"name":"rewrite-slide2-auto-circle-4","bbox":[60,469,38,38]}
+{"kind":"textbox","id":"sh/za1w3ytg","slide":2,"name":"rewrite-slide2-auto-number-4","text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[73,478,1207,242]}
+{"kind":"textbox","id":"sh/k7ux8na5","slide":2,"name":"rewrite-slide2-auto-step-4","text":"生成报告，需要时发送通知","textPreview":"生成报告，需要时发送通知","textChars":12,"textLines":1,"bbox":[116,473,1164,247]}
+{"kind":"shape","id":"sh/l83ehsbq","slide":2,"name":"rewrite-slide2-chat-circle-4","bbox":[684,469,38,38]}
+{"kind":"textbox","id":"sh/v2pg7md8","slide":2,"name":"rewrite-slide2-chat-number-4","text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[697,478,583,242]}
+{"kind":"textbox","id":"sh/u1gzyhcn","slide":2,"name":"rewrite-slide2-chat-step-4","text":"形成可追问的解释和处置建议","textPreview":"形成可追问的解释和处置建议","textChars":13,"textLines":1,"bbox":[740,473,540,247]}
+{"kind":"textbox","id":"sh/h47y9wvy","slide":2,"name":"rewrite-slide2-auto-value","text":"优势：持续发现异常、执行稳定、无需等待人工提问","textPreview":"优势：持续发现异常、执行稳定、无需等待人工提问","textChars":23,"textLines":1,"bbox":[58,527,1222,193]}
+{"kind":"textbox","id":"sh/g3yh0rud","slide":2,"name":"rewrite-slide2-chat-value","text":"优势：适合复杂问题、支持多轮追问、解释更有针对性","textPreview":"优势：适合复杂问题、支持多轮追问、解释更有针对性","textChars":24,"textLines":1,"bbox":[682,527,598,193]}
+{"kind":"shape","id":"sh/36pgb6d4","slide":2,"name":"rewrite-slide2-shared-band","bbox":[42,588,1196,64]}
+{"kind":"textbox","id":"sh/i5gz21cj","slide":2,"name":"rewrite-slide2-shared-text","text":"共同底座：共享诊断数据、规则和 Skill；统一输出 observation、evidence 与候选原因，并保留完整诊断记录","textPreview":"共同底座：共享诊断数据、规则和 Skill；统一输出 observation、evidence 与候选原因，并保留完整诊断记录","textChars":63,"textLines":1,"bbox":[68,607,1212,113]}
+{"kind":"textbox","id":"sh/5sridgva","slide":2,"name":"page-2","text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[1182,656,98,64]}
+{"kind":"notes","id":"nt/tedyqt","slide":2,"text":""}
+{"kind":"slide","id":"sl/pcm64z","slide":3,"title":"Skill 把诊断知识拆成可组合、可复用的能力单元","textShapes":29}
+{"kind":"textbox","id":"sh/2hcby1cr","slide":3,"name":"rewrite-slide3-title","text":"Skill 把诊断知识拆成可组合、可复用的能力单元","textPreview":"Skill 把诊断知识拆成可组合、可复用的能力单元","textChars":25,"textLines":1,"bbox":[42,34,1238,686]}
+{"kind":"textbox","id":"sh/pk3atwbi","slide":3,"name":"rewrite-slide3-subtitle","text":"统一逻辑是：接收上下文 → 调用数据与规则 → 输出证据 → 建议下一步诊断。","textPreview":"统一逻辑是：接收上下文 → 调用数据与规则 → 输出证据 → 建议下一步诊断。","textChars":39,"textLines":1,"bbox":[42,116,1238,604]}
+{"kind":"textbox","id":"sh/ojut0rux","slide":3,"name":"rewrite-slide3-logic-title","text":"每个 Skill 都遵循同一诊断结构","textPreview":"每个 Skill 都遵循同一诊断结构","textChars":18,"textLines":1,"bbox":[42,178,1238,542]}
+{"kind":"shape","id":"sh/fu1snmtg","slide":3,"name":"rewrite-slide3-logic-line","bbox":[88,278,1080,6]}
+{"kind":"shape","id":"sh/etsbuhcv","slide":3,"name":"rewrite-slide3-logic-node-1","bbox":[58,246,70,70]}
+{"kind":"textbox","id":"sh/1w3apwb6","slide":3,"name":"rewrite-slide3-logic-number-1","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[78,269,1202,451]}
+{"kind":"textbox","id":"sh/0vatwru1","slide":3,"name":"rewrite-slide3-logic-step-title-1","text":"接收上下文","textPreview":"接收上下文","textChars":5,"textLines":1,"bbox":[58,329,1222,391]}
+{"kind":"textbox","id":"sh/zq5sz6tk","slide":3,"name":"rewrite-slide3-logic-step-body-1","text":"时间范围与诊断对象\n以及已有证据","textPreview":"时间范围与诊断对象 | 以及已有证据","textChars":16,"textLines":2,"bbox":[58,369,1222,351]}
+{"kind":"shape","id":"sh/ypwb6lcz","slide":3,"name":"rewrite-slide3-logic-node-2","bbox":[350,246,70,70]}
+{"kind":"textbox","id":"sh/87idcz29","slide":3,"name":"rewrite-slide3-logic-number-2","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[370,269,910,451]}
+{"kind":"textbox","id":"sh/98rel43u","slide":3,"name":"rewrite-slide3-logic-step-title-2","text":"调用能力","textPreview":"调用能力","textChars":4,"textLines":1,"bbox":[350,329,930,391]}
+{"kind":"textbox","id":"sh/m50vapk3","slide":3,"name":"rewrite-slide3-logic-step-body-2","text":"查询只读数据\n执行领域规则与特征分析","textPreview":"查询只读数据 | 执行领域规则与特征分析","textChars":18,"textLines":2,"bbox":[350,369,930,351]}
+{"kind":"shape","id":"sh/n69wjulo","slide":3,"name":"rewrite-slide3-logic-node-3","bbox":[642,246,70,70]}
+{"kind":"textbox","id":"sh/03id8f2x","slide":3,"name":"rewrite-slide3-logic-number-3","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[662,269,618,451]}
+{"kind":"textbox","id":"sh/l4rehk3i","slide":3,"name":"rewrite-slide3-logic-step-title-3","text":"形成结果","textPreview":"形成结果","textChars":4,"textLines":1,"bbox":[642,329,638,391]}
+{"kind":"textbox","id":"sh/yhgv6pk7","slide":3,"name":"rewrite-slide3-logic-step-body-3","text":"输出诊断现象\n事实证据与候选原因","textPreview":"输出诊断现象 | 事实证据与候选原因","textChars":16,"textLines":2,"bbox":[642,369,638,351]}
+{"kind":"shape","id":"sh/zipcfals","slide":3,"name":"rewrite-slide3-logic-node-4","bbox":[934,246,70,70]}
+{"kind":"textbox","id":"sh/cfyd4f21","slide":3,"name":"rewrite-slide3-logic-number-4","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[954,269,326,451]}
+{"kind":"textbox","id":"sh/dg7udk3m","slide":3,"name":"rewrite-slide3-logic-step-title-4","text":"建议下一步","textPreview":"建议下一步","textChars":5,"textLines":1,"bbox":[934,329,346,391]}
+{"kind":"textbox","id":"sh/t0f2lcry","slide":3,"name":"rewrite-slide3-logic-step-body-4","text":"证据充分则结束\n否则推荐后续 Skill","textPreview":"证据充分则结束 | 否则推荐后续 Skill","textChars":20,"textLines":2,"bbox":[934,369,346,351]}
+{"kind":"shape","id":"sh/sz61s7at","slide":3,"name":"rewrite-slide3-bottom-divider","bbox":[42,458,1196,1]}
+{"kind":"textbox","id":"sh/7yxkj298","slide":3,"name":"rewrite-slide3-beam-title","text":"束流诊断链","textPreview":"束流诊断链","textChars":5,"textLines":1,"bbox":[42,482,1238,238]}
+{"kind":"textbox","id":"sh/6xojqxsn","slide":3,"name":"rewrite-slide3-beam-step-1","text":"束流状态识别","textPreview":"束流状态识别","textChars":6,"textLines":1,"bbox":[42,534,1238,186]}
+{"kind":"textbox","id":"sh/5wf2hsr2","slide":3,"name":"rewrite-slide3-beam-step-1-body","text":"识别正常、掉束、衰减或恒流中断","textPreview":"识别正常、掉束、衰减或恒流中断","textChars":15,"textLines":1,"bbox":[42,568,1238,152]}
+{"kind":"textbox","id":"sh/kv61onah","slide":3,"name":"rewrite-slide3-beam-arrow","text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[257,549,1023,171]}
+{"kind":"textbox","id":"sh/juxkf29w","slide":3,"name":"rewrite-slide3-beam-step-2","text":"根据现象继续排查","textPreview":"根据现象继续排查","textChars":8,"textLines":1,"bbox":[304,534,976,186]}
+{"kind":"textbox","id":"sh/it4jmxsb","slide":3,"name":"rewrite-slide3-beam-step-2-body","text":"衰减原因分析\n四极铁电源排查","textPreview":"衰减原因分析 | 四极铁电源排查","textChars":14,"textLines":2,"bbox":[304,568,976,152]}
+{"kind":"shape","id":"sh/psz2twr6","slide":3,"name":"rewrite-slide3-domain-divider","bbox":[624,482,1,139]}
+{"kind":"textbox","id":"sh/4rql0rql","slide":3,"name":"rewrite-slide3-pss-title","text":"PSS 联锁诊断链","textPreview":"PSS 联锁诊断链","textChars":9,"textLines":1,"bbox":[666,482,614,238]}
+{"kind":"textbox","id":"sh/mxkzut83","slide":3,"name":"rewrite-slide3-pss-step-1","text":"识别联锁状态变化","textPreview":"识别联锁状态变化","textChars":8,"textLines":1,"bbox":[666,534,614,186]}
+{"kind":"textbox","id":"sh/nyt0nypo","slide":3,"name":"rewrite-slide3-pss-step-1-body","text":"确认 interlocked → unlocked\n状态变化","textPreview":"确认 interlocked → unlocked | 状态变化","textChars":30,"textLines":2,"bbox":[666,568,614,152]}
+{"kind":"textbox","id":"sh/8z2hw3q9","slide":3,"name":"rewrite-slide3-pss-arrow","text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[901,549,379,171]}
+{"kind":"textbox","id":"sh/90bipo7u","slide":3,"name":"rewrite-slide3-pss-step-2","text":"回溯相关状态信号","textPreview":"回溯相关状态信号","textChars":8,"textLines":1,"bbox":[948,534,332,186]}
+{"kind":"textbox","id":"sh/y90zq987","slide":3,"name":"rewrite-slide3-pss-step-2-body","text":"回溯门、急停、剂量、PLC/IO\n等信号，定位主要原因","textPreview":"回溯门、急停、剂量、PLC/IO | 等信号，定位主要原因","textChars":27,"textLines":2,"bbox":[948,568,332,152]}
+{"kind":"textbox","id":"sh/za9gjeps","slide":3,"name":"rewrite-slide3-value","text":"价值：诊断知识可复用、能力可组合、结果可验证，新故障类型可以按相同结构继续扩展","textPreview":"价值：诊断知识可复用、能力可组合、结果可验证，新故障类型可以按相同结构继续扩展","textChars":39,"textLines":1,"bbox":[42,642,1238,78]}
+{"kind":"textbox","id":"sh/0v2hsjqd","slide":3,"name":"page-3","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[1182,656,98,64]}
+{"kind":"notes","id":"nt/pcm64z","slide":3,"text":""}
+{"kind":"slide","id":"sl/3s84ep","slide":4,"title":"两种 Agent 关注点不同：概率归因与诊断工程化","textShapes":21}
+{"kind":"textbox","id":"sh/n65sv2lc","slide":4,"name":"comparison-slide4-title","text":"两种 Agent 关注点不同：概率归因与诊断工程化","textPreview":"两种 Agent 关注点不同：概率归因与诊断工程化","textChars":25,"textLines":1,"bbox":[42,34,1238,686]}
+{"kind":"textbox","id":"sh/87e947mx","slide":4,"name":"comparison-slide4-subtitle","text":"贝叶斯方案擅长在既定故障图谱中排序嫌疑；本项目更强调多场景运行、能力复用与持续扩展。","textPreview":"贝叶斯方案擅长在既定故障图谱中排序嫌疑；本项目更强调多场景运行、能力复用与持续扩展。","textChars":42,"textLines":1,"bbox":[42,116,1238,604]}
+{"kind":"shape","id":"sh/98naxc3i","slide":4,"name":"comparison-slide4-divider","bbox":[638,178,2,354]}
+{"kind":"textbox","id":"sh/a9wr6x43","slide":4,"name":"comparison-slide4-left-title","text":"PPT 中的 Agent","textPreview":"PPT 中的 Agent","textChars":12,"textLines":1,"bbox":[58,184,1222,536]}
+{"kind":"textbox","id":"sh/va5sz2lo","slide":4,"name":"comparison-slide4-left-tagline","text":"贝叶斯网络 + Main Agent / Subagent","textPreview":"贝叶斯网络 + Main Agent / Subagent","textChars":29,"textLines":1,"bbox":[58,231,1222,489]}
+{"kind":"textbox","id":"sh/wbet87m9","slide":4,"name":"comparison-slide4-right-title","text":"本项目的 HarnessAgent","textPreview":"本项目的 HarnessAgent","textChars":17,"textLines":1,"bbox":[682,184,598,536]}
+{"kind":"textbox","id":"sh/xwna1c3u","slide":4,"name":"comparison-slide4-right-tagline","text":"统一编排框架 + 可组合诊断 Skill","textPreview":"统一编排框架 + 可组合诊断 Skill","textChars":20,"textLines":1,"bbox":[682,231,598,489]}
+{"kind":"textbox","id":"sh/ixgbah4z","slide":4,"name":"comparison-slide4-left-label-1","text":"推理核心","textPreview":"推理核心","textChars":4,"textLines":1,"bbox":[58,282,1222,438]}
+{"kind":"textbox","id":"sh/jyps3mlk","slide":4,"name":"comparison-slide4-left-body-1","text":"贝叶斯网络更新故障概率，通过剪枝与重归一化缩小嫌疑系统。","textPreview":"贝叶斯网络更新故障概率，通过剪枝与重归一化缩小嫌疑系统。","textChars":28,"textLines":1,"bbox":[58,316,1222,404]}
+{"kind":"textbox","id":"sh/byhoz2ps","slide":4,"name":"comparison-slide4-left-label-2","text":"Agent 组织","textPreview":"Agent 组织","textChars":8,"textLines":1,"bbox":[58,366,1222,354]}
+{"kind":"textbox","id":"sh/ax8nqxo7","slide":4,"name":"comparison-slide4-left-body-2","text":"主 Agent 维护全局状态，动态调度面向子系统的 Subagent 完成验证。","textPreview":"主 Agent 维护全局状态，动态调度面向子系统的 Subagent 完成验证。","textChars":40,"textLines":1,"bbox":[58,400,1222,320]}
+{"kind":"textbox","id":"sh/x0j61c7y","slide":4,"name":"comparison-slide4-left-label-3","text":"扩展方式","textPreview":"扩展方式","textChars":4,"textLines":1,"bbox":[58,450,1222,270]}
+{"kind":"textbox","id":"sh/czq5s76d","slide":4,"name":"comparison-slide4-left-body-3","text":"新增系统需要补充网络节点、条件概率及相应的 Subagent 配置。","textPreview":"新增系统需要补充网络节点、条件概率及相应的 Subagent 配置。","textChars":34,"textLines":1,"bbox":[58,484,1222,236]}
+{"kind":"textbox","id":"sh/nuhov2pw","slide":4,"name":"comparison-slide4-right-label-1","text":"推理核心","textPreview":"推理核心","textChars":4,"textLines":1,"bbox":[682,282,598,438]}
+{"kind":"textbox","id":"sh/298nmxob","slide":4,"name":"comparison-slide4-right-body-1","text":"HarnessAgent 根据问题和已有证据选择 Skill；事实由数据与规则产生。","textPreview":"HarnessAgent 根据问题和已有证据选择 Skill；事实由数据与规则产生。","textChars":42,"textLines":1,"bbox":[682,316,598,404]}
+{"kind":"textbox","id":"sh/pwz6xc7m","slide":4,"name":"comparison-slide4-right-label-2","text":"Agent 组织","textPreview":"Agent 组织","textChars":8,"textLines":1,"bbox":[682,366,598,354]}
+{"kind":"textbox","id":"sh/ovq5o761","slide":4,"name":"comparison-slide4-right-body-2","text":"同一闭环串联现象识别、原因排查与结论生成，证据不足则继续诊断。","textPreview":"同一闭环串联现象识别、原因排查与结论生成，证据不足则继续诊断。","textChars":31,"textLines":1,"bbox":[682,400,598,320]}
+{"kind":"textbox","id":"sh/7q1o7mp0","slide":4,"name":"comparison-slide4-right-label-3","text":"扩展方式","textPreview":"扩展方式","textChars":4,"textLines":1,"bbox":[682,450,598,270]}
+{"kind":"textbox","id":"sh/65sny1of","slide":4,"name":"comparison-slide4-right-body-3","text":"新增故障类型主要增加 Skill，可复用现有工具、证据结构和记录体系。","textPreview":"新增故障类型主要增加 Skill，可复用现有工具、证据结构和记录体系。","textChars":35,"textLines":1,"bbox":[682,484,598,236]}
+{"kind":"shape","id":"sh/ilwr6l8n","slide":4,"name":"comparison-slide4-bottom-band","bbox":[42,568,1196,86]}
+{"kind":"textbox","id":"sh/3m58zq98","slide":4,"name":"comparison-slide4-advantages","text":"本项目优势：自动巡检 + 对话诊断双模式｜Skill 化扩展成本低｜事实与模型分工清晰｜全过程可回放","textPreview":"本项目优势：自动巡检 + 对话诊断双模式｜Skill 化扩展成本低｜事实与模型分工清晰｜全过程可回放","textChars":50,"textLines":1,"bbox":[68,586,1212,134]}
+{"kind":"textbox","id":"sh/4ne98vqt","slide":4,"name":"comparison-slide4-extension","text":"可扩展方向：贝叶斯推理可以封装为一个原因分析 Skill 接入，无需重建整体诊断框架。","textPreview":"可扩展方向：贝叶斯推理可以封装为一个原因分析 Skill 接入，无需重建整体诊断框架。","textChars":43,"textLines":1,"bbox":[68,621,1212,99]}
+{"kind":"textbox","id":"sh/5onq10re","slide":4,"name":"page-4","text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[1182,656,98,64]}
+{"kind":"notes","id":"nt/3s84ep","slide":4,"text":""}
