@@ -367,16 +367,27 @@ async function selectThread(threadUid) {
 function renderThread(detail) {
   const runsByTurn = groupRunsByTurn(detail.runs || []);
   const visibleTurnIds = new Set((detail.turns || []).map((turn) => turn.turn_uid));
+  const renderedRunIds = new Set();
   const parts = [];
+  let pendingRuns = [];
   for (const turn of detail.turns || []) {
-    parts.push(renderTurn(turn));
-    for (const run of runsByTurn.get(turn.turn_uid) || []) {
-      parts.push(renderDiagnosisRunCard(run));
+    const turnRuns = runsByTurn.get(turn.turn_uid) || [];
+    if (turn.role === "assistant") {
+      const answerRuns = [...pendingRuns, ...turnRuns];
+      parts.push(renderTurn(turn, answerRuns));
+      answerRuns.forEach((run) => renderedRunIds.add(run.run_uid));
+      pendingRuns = [];
+      continue;
     }
+    parts.push(renderTurn(turn));
+    pendingRuns.push(...turnRuns);
   }
-  const orphanRuns = (detail.runs || []).filter((run) => !visibleTurnIds.has(run.turn_uid));
-  for (const run of orphanRuns) {
-    parts.push(renderDiagnosisRunCard(run));
+
+  const unboundRuns = (detail.runs || []).filter(
+    (run) => !renderedRunIds.has(run.run_uid) || !visibleTurnIds.has(run.turn_uid),
+  );
+  if (unboundRuns.length) {
+    parts.push(renderProcessActions(unboundRuns, "standalone"));
   }
   els.chatMessages.innerHTML = parts.join("") || `<div class="message system">这个会话还没有消息。</div>`;
   bindRunButtons();
@@ -394,35 +405,37 @@ function groupRunsByTurn(runs) {
   return grouped;
 }
 
-function renderTurn(turn) {
+function renderTurn(turn, runs = []) {
   const role = turn.role === "assistant" ? "assistant" : turn.role === "auto" ? "auto" : "user";
   const body = role === "user" ? escapeHtml(turn.content) : renderMarkdown(turn.content);
+  if (role === "assistant" && runs.length) {
+    return renderResponseWithProcess(body, role, runs);
+  }
   return `<div class="message ${role}">${body}</div>`;
 }
 
-function renderDiagnosisRunCard(run) {
-  const active = run.run_uid === state.selectedRunUid ? " selected" : "";
-  const title = buildRunTitle(run);
-  const timeRange = formatTimeWindow(run.time_window);
-  const answer = run.final_answer ? truncate(run.final_answer, 150) : "诊断尚未生成结论。";
+function renderResponseWithProcess(body, role, runs) {
   return `
-    <article class="run-card${active}">
-      <div class="run-line">
-        <div>
-          <strong>${escapeHtml(title)}</strong>
-          <div class="run-subtitle">${escapeHtml(timeRange || formatTime(run.started_at) || run.run_uid)}</div>
-        </div>
-        ${statusChip(run.status)}
-      </div>
-      <div class="run-preview">${escapeHtml(answer)}</div>
-      <div class="thread-meta">
-        <span>运行时间：${escapeHtml(formatTime(run.started_at))}</span>
-        <span>候选原因：${run.candidate_cause_count || 0}</span>
-      </div>
-      <div class="run-actions">
-        <button class="small-button" type="button" data-run="${escapeAttr(run.run_uid)}">查看诊断过程</button>
-      </div>
-    </article>
+    <div class="response-with-process ${role}">
+      ${renderProcessActions(runs)}
+      <div class="message ${role}">${body}</div>
+    </div>
+  `;
+}
+
+function renderProcessActions(runs, variant = "") {
+  const className = variant ? ` process-actions-${variant}` : "";
+  return `
+    <div class="response-process-actions${className}">
+      ${runs.map((run) => `
+        <button
+          class="process-link-button"
+          type="button"
+          data-run="${escapeAttr(run.run_uid)}"
+          aria-label="查看完整诊断过程"
+        >查看完整诊断过程</button>
+      `).join("")}
+    </div>
   `;
 }
 
@@ -478,8 +491,8 @@ async function submitChat(event) {
     appendMessage(
       response.status === "failed" ? "system" : "assistant",
       response.final_answer || response.error || "诊断完成。",
+      response.run_uid,
     );
-    appendLiveRunCard(response, text);
     await loadThreads();
   } catch (error) {
     appendMessage("system", error.message);
@@ -523,31 +536,16 @@ function renderEmptyChat() {
   `;
 }
 
-function appendMessage(role, content) {
+function appendMessage(role, content, runUid = null) {
   const body = role === "user" ? escapeHtml(content) : renderMarkdown(content);
+  const html = runUid
+    ? renderResponseWithProcess(body, role, [{ run_uid: runUid }])
+    : `<div class="message ${role}">${body}</div>`;
   els.chatMessages.insertAdjacentHTML(
     "beforeend",
-    `<div class="message ${role}">${body}</div>`,
+    html,
   );
-  scrollMessagesToBottom();
-}
-
-function appendLiveRunCard(response, userQuery) {
-  const run = {
-    run_uid: response.run_uid,
-    case_uid: response.case_uid,
-    turn_uid: response.turn_uid,
-    status: response.status,
-    trigger_source: "chat",
-    user_query: userQuery,
-    time_window: null,
-    started_at: new Date().toISOString(),
-    final_answer: response.final_answer,
-    llm_usage: response.llm_usage,
-    candidate_cause_count: (response.candidate_causes || []).length,
-  };
-  els.chatMessages.insertAdjacentHTML("beforeend", renderDiagnosisRunCard(run));
-  bindRunButtons();
+  if (runUid) bindRunButtons();
   scrollMessagesToBottom();
 }
 
@@ -1999,10 +1997,12 @@ function closeProcessDrawer() {
 }
 
 function markSelectedRun() {
-  document.querySelectorAll(".run-card").forEach((card) => card.classList.remove("selected"));
+  document.querySelectorAll(".process-link-button").forEach((button) => {
+    button.classList.remove("selected");
+  });
   if (!state.selectedRunUid) return;
   document.querySelectorAll(`[data-run="${cssEscape(state.selectedRunUid)}"]`).forEach((button) => {
-    button.closest(".run-card")?.classList.add("selected");
+    button.classList.add("selected");
   });
 }
 
