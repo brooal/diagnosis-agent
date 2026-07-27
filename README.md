@@ -148,7 +148,7 @@ APP_DATABASE_URL=sqlite:///./diagnosis_agent.db
 
 OPENAI_BASE_URL=https://api.deepseek.com
 OPENAI_API_KEY=your_key
-OPENAI_MODEL=deepseek-chat
+OPENAI_MODEL=deepseek-v4-pro
 
 QDRANT_URL=http://127.0.0.1:7333
 QDRANT_COLLECTION=diagnosis_rag

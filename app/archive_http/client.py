@@ -62,9 +62,10 @@ class ArchiveHttpClient:
                 return self._request_json_once(path)
             except ArchiveHttpAuthError as exc:
                 last_error = exc
-                self.auth.refresh()
                 if attempt >= self.config.retry_times:
                     break
+                self.auth.invalidate()
+                time.sleep(0.25 * (attempt + 1))
             except (ArchiveHttpError, URLError, TimeoutError) as exc:
                 last_error = exc
                 if attempt >= self.config.retry_times:

@@ -88,6 +88,15 @@ class ArchiveHttpAuth:
         if not self.jsessionid:
             raise ArchiveHttpAuthError("Archive HTTP login did not return JSESSIONID.")
 
+    def invalidate(self) -> None:
+        """Discard a failed dynamic login so the next request can retry CAS."""
+        if not self.config.username or not self.config.password:
+            return
+        self.token = None
+        self.jsessionid = None
+        self._login_attempted = False
+        self.session = requests.Session()
+
     def _sync_from_session(self) -> None:
         cookies = self._target_cookies()
         self.jsessionid = cookies.get("JSESSIONID") or self.jsessionid

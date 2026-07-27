@@ -54,3 +54,21 @@ def test_target_cookie_prefers_hlsts_domain() -> None:
     assert auth.jsessionid == "hls-session"
     assert auth.headers()["Authorization"] == "hls-session"
     assert auth.headers()["Cookie"] == "JSESSIONID=hls-session"
+
+
+def test_invalidate_discards_failed_dynamic_login() -> None:
+    auth = ArchiveHttpAuth.from_config(
+        ArchiveHttpConfig(
+            username="diagnosis@example.com",
+            password="secret",
+            auth_token="stale-token",
+            jsessionid="stale-session",
+        )
+    )
+    auth._login_attempted = True
+
+    auth.invalidate()
+
+    assert auth.token is None
+    assert auth.jsessionid is None
+    assert auth._login_attempted is False

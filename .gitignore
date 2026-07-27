@@ -9,6 +9,6 @@ diagnosis_agent.db
 *.db
 docker-data/
 experiments/
+develop_documents/
 tests/test_pss_ablation.py
 .env
-
